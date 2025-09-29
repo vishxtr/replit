@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartSOC IR - Advanced Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+            color: #d1d5db;
+        }
+
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        .card {
+            background: rgba(31, 41, 55, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(55, 65, 81, 0.3);
+            border-radius: 0.75rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .threat-timeline {
+            position: relative;
+        }
+
+        .threat-timeline::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, #3b82f6, #8b5cf6);
+        }
+
+        .threat-item {
+            position: relative;
+            margin-left: 40px;
+            margin-bottom: 20px;
+        }
+
+        .threat-item::before {
+            content: '';
+            position: absolute;
+            left: -30px;
+            top: 8px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #3b82f6;
+            border: 3px solid #1f2937;
+        }
+
+        .threat-item.high::before {
+            background: #ef4444;
+        }
+
+        .threat-item.medium::before {
+            background: #f59e0b;
+        }
+
+        .threat-item.low::before {
+            background: #10b981;
+        }
+    </style>
+</head>
+
+<body class="p-4 sm:p-6 lg:p-8">
+    <!-- Particles Background -->
+    <div id="particles-js"></div>
+
+    <div class="max-w-7xl mx-auto relative z-10">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-3">
+                    <div
+                        class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-chart-line text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl sm:text-3xl font-bold text-white">Advanced Analytics</h1>
+                        <p class="text-sm text-gray-400">Comprehensive Security Intelligence Dashboard</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="index.html" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition">
+                    <i class="fas fa-shield-alt mr-2"></i>Dashboard
+                </a>
+                <a href="landing.html" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition">
+                    <i class="fas fa-home mr-2"></i>Home
+                </a>
+                <div class="flex items-center space-x-2 text-sm text-gray-400">
+                    <i class="fas fa-clock"></i>
+                    <span id="current-time"></span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Key Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="card p-6 metric-card">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-shield-alt text-white text-xl"></i>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-3xl font-bold text-white">1,247</div>
+                        <div class="text-sm text-gray-400">Total Threats Blocked</div>
+                    </div>
+                </div>
+                <div class="flex items-center text-sm text-green-400">
+                    <i class="fas fa-arrow-up mr-1"></i>
+                    <span>+15% from last week</span>
+                </div>
+            </div>
+
+            <div class="card p-6 metric-card">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-white text-xl"></i>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-3xl font-bold text-white">23</div>
+                        <div class="text-sm text-gray-400">Critical Alerts</div>
+                    </div>
+                </div>
+                <div class="flex items-center text-sm text-red-400">
+                    <i class="fas fa-arrow-down mr-1"></i>
+                    <span>-8% from last week</span>
+                </div>
+            </div>
+
+            <div class="card p-6 metric-card">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-clock text-white text-xl"></i>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-3xl font-bold text-white">2.3s</div>
+                        <div class="text-sm text-gray-400">Avg Response Time</div>
+                    </div>
+                </div>
+                <div class="flex items-center text-sm text-green-400">
+                    <i class="fas fa-arrow-down mr-1"></i>
+                    <span>-12% improvement</span>
+                </div>
+            </div>
+
+            <div class="card p-6 metric-card">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-brain text-white text-xl"></i>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-3xl font-bold text-white">98.7%</div>
+                        <div class="text-sm text-gray-400">Detection Accuracy</div>
+                    </div>
+                </div>
+                <div class="flex items-center text-sm text-green-400">
+                    <i class="fas fa-arrow-up mr-1"></i>
+                    <span>+2.1% improvement</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Analytics Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Threat Distribution Chart -->
+            <div class="lg:col-span-2 card p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-semibold text-white flex items-center">
+                        <i class="fas fa-pie-chart mr-3 text-blue-400"></i>
+                        Threat Distribution
+                    </h2>
+                    <div class="flex space-x-2">
+                        <button onclick="exportAnalytics()"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                            <i class="fas fa-download mr-1"></i>Export
+                        </button>
+
+                    </div>
+                </div>
+                <div class="h-80">
+                    <canvas id="threatDistributionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Top Threat Sources -->
+            <div class="card p-6">
+                <h2 class="text-xl font-semibold text-white mb-6 flex items-center">
+                    <i class="fas fa-globe mr-3 text-green-400"></i>
+                    Top Threat Sources
+                </h2>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                                <span class="text-white text-sm font-bold">1</span>
+                            </div>
+                            <div>
+                                <div class="text-white font-semibold">Russia</div>
+                                <div class="text-sm text-gray-400">Moscow, RU</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-lg font-bold text-red-400">847</div>
+                            <div class="text-xs text-gray-400">threats</div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                                <span class="text-white text-sm font-bold">2</span>
+                            </div>
+                            <div>
+                                <div class="text-white font-semibold">China</div>
+                                <div class="text-sm text-gray-400">Beijing, CN</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-lg font-bold text-orange-400">623</div>
+                            <div class="text-xs text-gray-400">threats</div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                                <span class="text-white text-sm font-bold">3</span>
+                            </div>
+                            <div>
+                                <div class="text-white font-semibold">North Korea</div>
+                                <div class="text-sm text-gray-400">Pyongyang, KP</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-lg font-bold text-yellow-400">341</div>
+                            <div class="text-xs text-gray-400">threats</div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                                <span class="text-white text-sm font-bold">4</span>
+                            </div>
+                            <div>
+                                <div class="text-white font-semibold">Iran</div>
+                                <div class="text-sm text-gray-400">Tehran, IR</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-lg font-bold text-blue-400">198</div>
+                            <div class="text-xs text-gray-400">threats</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline and Trends -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Threat Timeline -->
+            <div class="card p-6">
+                <h2 class="text-xl font-semibold text-white mb-6 flex items-center">
+                    <i class="fas fa-timeline mr-3 text-purple-400"></i>
+                    Recent Threat Timeline
+                </h2>
+                <div class="threat-timeline">
+                    <div class="threat-item high">
+                        <div class="bg-red-900 bg-opacity-50 border border-red-500 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-red-400 font-semibold">High Severity</span>
+                                <span class="text-sm text-gray-400">2 minutes ago</span>
+                            </div>
+                            <div class="text-white font-semibold">Brute Force Attack Detected</div>
+                            <div class="text-sm text-gray-300">Multiple failed login attempts from 192.168.1.100</div>
+                        </div>
+                    </div>
+
+                    <div class="threat-item medium">
+                        <div class="bg-yellow-900 bg-opacity-50 border border-yellow-500 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-yellow-400 font-semibold">Medium Severity</span>
+                                <span class="text-sm text-gray-400">15 minutes ago</span>
+                            </div>
+                            <div class="text-white font-semibold">Suspicious File Upload</div>
+                            <div class="text-sm text-gray-300">Large file upload detected from user@company.com</div>
+                        </div>
+                    </div>
+
+                    <div class="threat-item low">
+                        <div class="bg-green-900 bg-opacity-50 border border-green-500 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-green-400 font-semibold">Low Severity</span>
+                                <span class="text-sm text-gray-400">1 hour ago</span>
+                            </div>
+                            <div class="text-white font-semibold">Unusual Login Time</div>
+                            <div class="text-sm text-gray-300">Login outside business hours from 10.0.0.5</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Trends -->
+            <div class="card p-6">
+                <h2 class="text-xl font-semibold text-white mb-6 flex items-center">
+                    <i class="fas fa-chart-line mr-3 text-green-400"></i>
+                    Performance Trends
+                </h2>
+                <div class="h-80">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Posture -->
+        <div class="card p-6">
+            <h2 class="text-xl font-semibold text-white mb-6 flex items-center">
+                <i class="fas fa-shield-alt mr-3 text-blue-400"></i>
+                Security Posture Assessment
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="text-center">
+                    <div class="w-32 h-32 mx-auto mb-4 relative">
+                        <canvas id="securityScoreChart" width="128" height="128"></canvas>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-white">85</div>
+                                <div class="text-sm text-gray-400">Security Score</div>
+                            </div>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-semibold text-white mb-2">Overall Security</h3>
+                    <p class="text-gray-400 text-sm">Good security posture with room for improvement</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-white font-semibold">Network Security</span>
+                            <span class="text-green-400 font-bold">92%</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div class="bg-green-500 h-2 rounded-full" style="width: 92%"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-white font-semibold">Endpoint Protection</span>
+                            <span class="text-yellow-400 font-bold">78%</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div class="bg-yellow-500 h-2 rounded-full" style="width: 78%"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-white font-semibold">Data Protection</span>
+                            <span class="text-blue-400 font-bold">85%</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div class="bg-blue-500 h-2 rounded-full" style="width: 85%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="bg-green-900 bg-opacity-50 border border-green-500 rounded-lg p-4">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-check-circle text-green-400 mr-2"></i>
+                            <span class="text-green-400 font-semibold">Strengths</span>
+                        </div>
+                        <ul class="text-sm text-gray-300 space-y-1">
+                            <li>• Strong firewall configuration</li>
+                            <li>• Regular security updates</li>
+                            <li>• Employee training program</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-red-900 bg-opacity-50 border border-red-500 rounded-lg p-4">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-exclamation-triangle text-red-400 mr-2"></i>
+                            <span class="text-red-400 font-semibold">Areas for Improvement</span>
+                        </div>
+                        <ul class="text-sm text-gray-300 space-y-1">
+                            <li>• Multi-factor authentication</li>
+                            <li>• Endpoint detection response</li>
+                            <li>• Backup and recovery testing</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check authentication status
+        function checkAuth() {
+            const isAuthenticated = sessionStorage.getItem('analytics_authenticated');
+            if (!isAuthenticated) {
+                window.location.href = 'analytics-login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Initialize authentication check
+        if (!checkAuth()) {
+            // Redirect to login page
+            window.location.href = 'analytics-login.html';
+        }
+
+        // Logout function
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                sessionStorage.removeItem('analytics_authenticated');
+                window.location.href = 'analytics-login.html';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize particles.js
+            particlesJS('particles-js', {
+                particles: {
+                    number: { value: 40 },
+                    color: { value: '#3b82f6' },
+                    shape: { type: 'circle' },
+                    opacity: { value: 0.3, random: true },
+                    size: { value: 2, random: true },
+                    line_linked: { enable: true, distance: 200, color: '#3b82f6', opacity: 0.2, width: 1 },
+                    move: { enable: true, speed: 1, direction: 'none', random: false, straight: false, out_mode: 'out', bounce: false }
+                },
+                interactivity: {
+                    detect_on: 'canvas',
+                    events: { onhover: { enable: true, mode: 'repulse' }, onclick: { enable: true, mode: 'push' }, resize: true },
+                    modes: { grab: { distance: 400, line_linked: { opacity: 1 } }, bubble: { distance: 400, size: 40, duration: 2, opacity: 8, speed: 3 }, repulse: { distance: 200, duration: 0.4 }, push: { particles_nb: 4 }, remove: { particles_nb: 2 } }
+                },
+                retina_detect: true
+            });
+
+            // Update current time
+            function updateTime() {
+                const now = new Date();
+                document.getElementById('current-time').textContent = now.toLocaleTimeString();
+            }
+            updateTime();
+            setInterval(updateTime, 1000);
+
+            // Threat Distribution Chart
+            const threatCtx = document.getElementById('threatDistributionChart').getContext('2d');
+            new Chart(threatCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Malware', 'Phishing', 'DDoS', 'Insider Threats', 'Data Exfiltration'],
+                    datasets: [{
+                        data: [35, 25, 20, 15, 5],
+                        backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6', '#10b981'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#d1d5db',
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Performance Chart
+            const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+            new Chart(performanceCtx, {
+                type: 'line',
+                data: {
+                    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+                    datasets: [{
+                        label: 'Threats Blocked',
+                        data: [12, 8, 15, 23, 18, 14],
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'False Positives',
+                        data: [2, 1, 3, 2, 1, 2],
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#d1d5db' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: '#374151' }
+                        },
+                        y: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: '#374151' }
+                        }
+                    }
+                }
+            });
+
+            // Security Score Chart
+            const securityCtx = document.getElementById('securityScoreChart').getContext('2d');
+            new Chart(securityCtx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [85, 15],
+                        backgroundColor: ['#3b82f6', '#374151'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+
+            // Export Analytics function
+            window.exportAnalytics = function () {
+                // Prevent multiple clicks
+                if (window.isExporting) return;
+                window.isExporting = true;
+
+                try {
+                    // Create a proper PDF using jsPDF
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    const currentTime = new Date().toLocaleString();
+
+                    // Set font and add title
+                    doc.setFontSize(20);
+                    doc.text('SmartSOC Analytics Report', 20, 20);
+                    doc.setFontSize(12);
+                    doc.text(`Generated: ${currentTime}`, 20, 30);
+
+                    let yPosition = 50;
+
+                    // Executive Summary
+                    doc.setFontSize(16);
+                    doc.text('EXECUTIVE SUMMARY', 20, yPosition);
+                    yPosition += 15;
+
+                    doc.setFontSize(10);
+                    doc.text('Total Threats Blocked: 1,247', 20, yPosition);
+                    yPosition += 8;
+                    doc.text('Critical Alerts: 23', 20, yPosition);
+                    yPosition += 8;
+                    doc.text('Average Response Time: 2.3s', 20, yPosition);
+                    yPosition += 8;
+                    doc.text('Detection Accuracy: 98.7%', 20, yPosition);
+                    yPosition += 20;
+
+                    // Threat Distribution Chart Data
+                    doc.setFontSize(16);
+                    doc.text('THREAT DISTRIBUTION CHART DATA', 20, yPosition);
+                    yPosition += 15;
+
+                    doc.setFontSize(10);
+                    doc.text('Malware: 35%', 20, yPosition);
+                    yPosition += 8;
+                    doc.text('Phishing: 25%', 20, yPosition);
+                    yPosition += 8;
+                    doc.text('DDoS: 20%', 20, yPosition);
+                    yPosition += 8;
+                    doc.text('Insider Threats: 15%', 20, yPosition);
+                    yPosition += 8;
+                    doc.text('Data Exfiltration: 5%', 20, yPosition);
+                    yPosition += 20;
+
+                    // Threat Sources Analysis
+                    doc.setFontSize(16);
+                    doc.text('THREAT SOURCES ANALYSIS', 20, yPosition);
+                    yPosition += 15;
+
+                    doc.setFontSize(10);
+                    doc.text('1. Russia: 847 threats (68%)', 20, yPosition);
+                    yPosition += 8;
+                    doc.text('2. China: 623 threats (50%)', 20, yPosition);
+                    yPosition += 8;
+                    doc.text('3. North Korea: 341 threats (27%)', 20, yPosition);
+                    yPosition += 8;
+                    doc.text('4. Iran: 198 threats (16%)', 20, yPosition);
+                    yPosition += 20;
+
+                    // Security Posture Assessment
+                    doc.setFontSize(16);
+                    doc.text('SECURITY POSTURE ASSESSMENT', 20, yPosition);
+                    yPosition += 15;
+
+                    doc.setFontSize(10);
+                    doc.text('Overall Security Score: 85/100', 20, yPosition);
+                    yPosition += 8;
+                    doc.text('- Network Security: 92%', 20, yPosition);
+                    yPosition += 8;
+                    doc.text('- Endpoint Protection: 78%', 20, yPosition);
+                    yPosition += 8;
+                    doc.text('- Data Protection: 85%', 20, yPosition);
+                    yPosition += 20;
+
+
+                    // Footer
+                    doc.setFontSize(8);
+                    doc.text('This report was generated by SmartSOC Analytics Engine.', 20, yPosition);
+                    doc.text('For detailed technical analysis, contact your security team.', 20, yPosition + 8);
+
+                    // Save the PDF
+                    doc.save(`SmartSOC_Threat_Distribution_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+
+                    // Show single success message
+                    alert('Export chart successfully!\n\nFile downloaded:\n• SmartSOC_Threat_Distribution_Report.pdf');
+
+                } catch (error) {
+                    console.error('PDF generation error:', error);
+                    alert('Error generating PDF. Please try again.');
+                } finally {
+                    // Reset export flag
+                    window.isExporting = false;
+                }
+            };
+        });
+    </script>
+</body>
+
+</html>

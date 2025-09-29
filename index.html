@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart SOC Incident Response System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+            color: #d1d5db;
+            overflow-x: hidden;
+        }
+        
+        /* Animated background particles */
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+        .card {
+            background: rgba(31, 41, 55, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(55, 65, 81, 0.3);
+            border-radius: 0.75rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+        
+        /* Ensure smooth button transitions */
+        #refresh-alerts-btn {
+            transition: all 0.2s ease;
+        }
+        
+        #refresh-alerts-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        
+        /* Ensure spinner animation works properly */
+        .fa-spinner.fa-spin {
+            animation: fa-spin 1s infinite linear;
+        }
+        
+        @keyframes fa-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .glow-effect {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        }
+        
+        .threat-indicator {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .threat-indicator::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: scan 3s infinite;
+        }
+        
+        @keyframes scan {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        .table-header {
+            background-color: #374151;
+            color: #d1d5db;
+        }
+        .table-row:hover {
+            background-color: #374151;
+        }
+        .severity-high {
+            background-color: #991b1b;
+            color: #fecaca;
+        }
+        .severity-medium {
+            background-color: #9a3412;
+            color: #fdba74;
+        }
+        .severity-low {
+            background-color: #92400e;
+            color: #fde68a;
+        }
+        .status-new {
+            background-color: #1d4ed8;
+            color: #dbeafe;
+        }
+        .status-remediated {
+            background-color: #166534;
+            color: #dcfce7;
+        }
+        /* Custom scrollbar for log feed */
+        .log-feed::-webkit-scrollbar {
+            width: 8px;
+        }
+        .log-feed::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        .log-feed::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+        .log-feed::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+        .chatbot-bubble {
+            animation: pop-in 0.3s ease-out;
+        }
+        @keyframes pop-in {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 lg:p-8">
+    <!-- Particles.js Background -->
+    <div id="particles-js"></div>
+    
+    <div class="max-w-7xl mx-auto relative z-10">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-shield-alt text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl sm:text-3xl font-bold text-white">SmartSOC IRS</h1>
+                        <p class="text-sm text-gray-400">AI-Powered Security Operations Center</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-6">
+                <div class="flex items-center space-x-2">
+                    <span class="relative flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                    </span>
+                    <span id="system-status" class="text-green-400 font-medium">System Active</span>
+                </div>
+                <div class="flex items-center space-x-2 text-sm text-gray-400">
+                    <i class="fas fa-clock"></i>
+                    <span id="current-time"></span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <a href="analytics.html" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-chart-line mr-2"></i>Analytics
+                    </a>
+                    <div class="relative">
+                        <button id="moreBtn" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-ellipsis-h mr-2"></i>More
+                        </button>
+                        <div id="moreMenu" class="hidden absolute right-0 mt-2 w-48 card p-2 z-50">
+                            <a href="cases.html" class="block px-3 py-2 hover:bg-gray-700 rounded">Cases</a>
+                            <a href="threat-intel.html" class="block px-3 py-2 hover:bg-gray-700 rounded">Threat Intelligence</a>
+                            <a href="playbooks.html" class="block px-3 py-2 hover:bg-gray-700 rounded">Automation Playbooks</a>
+                            <a href="assets.html" class="block px-3 py-2 hover:bg-gray-700 rounded">Assets</a>
+                        </div>
+                    </div>
+                    <a href="landing.html" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-home mr-2"></i>Home
+                    </a>
+                    <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Grid Layout -->
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column: Alerts and Stats -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Enhanced Stats Cards -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="card p-6 flex flex-col items-center justify-center threat-indicator">
+                        <div class="flex items-center space-x-2 mb-2">
+                            <i class="fas fa-chart-line text-blue-400"></i>
+                            <h3 class="text-sm font-medium text-gray-400">Total Events</h3>
+                        </div>
+                        <p id="total-events" class="text-4xl font-bold text-white mb-1">0</p>
+                        <div class="flex items-center text-xs text-green-400">
+                            <i class="fas fa-arrow-up mr-1"></i>
+                            <span>+12% from yesterday</span>
+                        </div>
+                    </div>
+                    <div class="card p-6 flex flex-col items-center justify-center threat-indicator">
+                        <div class="flex items-center space-x-2 mb-2">
+                            <i class="fas fa-exclamation-triangle text-red-400"></i>
+                            <h3 class="text-sm font-medium text-gray-400">High Alerts</h3>
+                        </div>
+                        <p id="high-alerts" class="text-4xl font-bold text-red-500 mb-1">0</p>
+                        <div class="flex items-center text-xs text-red-400">
+                            <i class="fas fa-shield-alt mr-1"></i>
+                            <span>Critical threats</span>
+                        </div>
+                    </div>
+                    <div class="card p-6 flex flex-col items-center justify-center threat-indicator">
+                        <div class="flex items-center space-x-2 mb-2">
+                            <i class="fas fa-exclamation-circle text-orange-400"></i>
+                            <h3 class="text-sm font-medium text-gray-400">Medium Alerts</h3>
+                        </div>
+                        <p id="medium-alerts" class="text-4xl font-bold text-orange-500 mb-1">0</p>
+                        <div class="flex items-center text-xs text-orange-400">
+                            <i class="fas fa-eye mr-1"></i>
+                            <span>Under review</span>
+                        </div>
+                    </div>
+                    <div class="card p-6 flex flex-col items-center justify-center threat-indicator">
+                        <div class="flex items-center space-x-2 mb-2">
+                            <i class="fas fa-info-circle text-yellow-400"></i>
+                            <h3 class="text-sm font-medium text-gray-400">Low Alerts</h3>
+                        </div>
+                        <p id="low-alerts" class="text-4xl font-bold text-yellow-500 mb-1">0</p>
+                        <div class="flex items-center text-xs text-yellow-400">
+                            <i class="fas fa-check mr-1"></i>
+                            <span>Auto-resolved</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Threat Intelligence Dashboard -->
+                <div id="threat-intelligence-dashboard" class="card p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-semibold text-white flex items-center">
+                            <i class="fas fa-brain mr-3 text-purple-400"></i>
+                            Threat Intelligence Dashboard
+                        </h2>
+                        <div class="flex space-x-2">
+                            <button id="refresh-alerts-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-all duration-200 hover:scale-105">
+                                <i class="fas fa-sync-alt mr-1"></i>Refresh Alerts
+                            </button>
+                            <button id="export-pdf-btn" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-all duration-200 hover:scale-105">
+                                <i class="fas fa-download mr-1"></i>Export Report
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Threat Map -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-gray-800 rounded-lg p-4">
+                            <h3 class="text-lg font-semibold text-white mb-3">Threat Origins</h3>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-300">Russia</span>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-20 bg-gray-700 rounded-full h-2">
+                                            <div class="bg-red-500 h-2 rounded-full" style="width: 85%"></div>
+                                        </div>
+                                        <span class="text-sm text-red-400">85%</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-300">China</span>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-20 bg-gray-700 rounded-full h-2">
+                                            <div class="bg-orange-500 h-2 rounded-full" style="width: 65%"></div>
+                                        </div>
+                                        <span class="text-sm text-orange-400">65%</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-300">North Korea</span>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-20 bg-gray-700 rounded-full h-2">
+                                            <div class="bg-yellow-500 h-2 rounded-full" style="width: 45%"></div>
+                                        </div>
+                                        <span class="text-sm text-yellow-400">45%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-800 rounded-lg p-4">
+                            <h3 class="text-lg font-semibold text-white mb-3">Attack Vectors</h3>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-300">Phishing</span>
+                                    <span class="text-sm text-red-400 font-semibold">42%</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-300">Malware</span>
+                                    <span class="text-sm text-orange-400 font-semibold">28%</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-300">DDoS</span>
+                                    <span class="text-sm text-yellow-400 font-semibold">18%</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-300">Insider</span>
+                                    <span class="text-sm text-blue-400 font-semibold">12%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alerts Table -->
+                <div class="card p-4 sm:p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-white flex items-center">
+                            <i class="fas fa-exclamation-triangle mr-3 text-red-400"></i>
+                            Active Incidents
+                        </h2>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-gray-400">Filter:</span>
+                            <button class="bg-red-600 text-white px-2 py-1 rounded text-xs filter-btn" data-severity="High">High</button>
+                            <button class="bg-orange-600 text-white px-2 py-1 rounded text-xs filter-btn" data-severity="Medium">Medium</button>
+                            <button class="bg-yellow-600 text-white px-2 py-1 rounded text-xs filter-btn" data-severity="Low">Low</button>
+                            <button class="bg-gray-600 text-white px-2 py-1 rounded text-xs filter-btn" data-severity="All">All</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="table-header">
+                                <tr>
+                                    <th class="p-3">ID</th>
+                                    <th class="p-3">Timestamp</th>
+                                    <th class="p-3">Type</th>
+                                    <th class="p-3">Severity</th>
+                                    <th class="p-3">Status</th>
+                                    <th class="p-3">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="alerts-table-body">
+                                <!-- Alerts will be dynamically inserted here -->
+                                <tr><td colspan="6" class="text-center p-8 text-gray-500">No active incidents. Monitoring...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Details, Logs, Chart -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Real-time Analytics Chart -->
+                <div class="card p-4 sm:p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-white flex items-center">
+                            <i class="fas fa-chart-area mr-3 text-green-400"></i>
+                            Real-time Analytics
+                        </h2>
+                        <div class="flex space-x-2">
+                            <button class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs">
+                                <i class="fas fa-play mr-1"></i>Live
+                            </button>
+                        </div>
+                    </div>
+                    <div class="h-64 bg-gray-900 rounded-lg p-4">
+                        <canvas id="threatChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+
+                <!-- System Health -->
+                <div class="card p-4 sm:p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-white flex items-center">
+                        <i class="fas fa-heartbeat mr-3 text-green-400"></i>
+                        System Health
+                    </h2>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-300">CPU Usage</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-20 bg-gray-700 rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full" style="width: 35%"></div>
+                                </div>
+                                <span class="text-sm text-green-400">35%</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-300">Memory Usage</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-20 bg-gray-700 rounded-full h-2">
+                                    <div class="bg-yellow-500 h-2 rounded-full" style="width: 68%"></div>
+                                </div>
+                                <span class="text-sm text-yellow-400">68%</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-300">Network I/O</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-20 bg-gray-700 rounded-full h-2">
+                                    <div class="bg-blue-500 h-2 rounded-full" style="width: 42%"></div>
+                                </div>
+                                <span class="text-sm text-blue-400">42%</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-300">Storage</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-20 bg-gray-700 rounded-full h-2">
+                                    <div class="bg-red-500 h-2 rounded-full" style="width: 85%"></div>
+                                </div>
+                                <span class="text-sm text-red-400">85%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alert Details -->
+                <div id="alert-details-panel" class="card p-4 sm:p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-white flex items-center">
+                        <i class="fas fa-info-circle mr-3 text-blue-400"></i>
+                        Incident Details
+                    </h2>
+                    <div id="alert-details-content" class="text-gray-400">
+                        <div class="text-center py-8">
+                            <i class="fas fa-mouse-pointer text-4xl text-gray-600 mb-4"></i>
+                            <p>Select an incident from the list to view details.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Log Feed -->
+                <div class="card p-4 sm:p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-white flex items-center">
+                            <i class="fas fa-stream mr-3 text-purple-400"></i>
+                            Live Event Stream
+                        </h2>
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                            <span class="text-xs text-green-400">Live</span>
+                        </div>
+                    </div>
+                    <div id="log-feed" class="log-feed h-80 overflow-y-auto bg-gray-900 rounded-md p-3 space-y-1">
+                        <!-- Logs will be dynamically inserted here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Chatbot -->
+    <div id="chatbot-container" class="fixed bottom-6 right-6 z-50">
+        <button id="chatbot-toggle" class="bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500 transition-transform transform hover:scale-110">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+        </button>
+        <div id="chatbot-window" class="hidden absolute bottom-20 right-0 w-80 card shadow-xl chatbot-bubble">
+            <div class="p-4 border-b border-gray-600">
+                <h3 class="font-semibold text-white">SOC Assistant</h3>
+            </div>
+            <div id="chatbot-messages" class="p-4 h-64 overflow-y-auto">
+                 <div class="text-sm p-2 bg-blue-900/50 rounded-lg text-gray-300 mb-2">Hello! Ask me about security concepts like "brute force" or "data exfiltration", or ask me to "explain alert [ID]".</div>
+            </div>
+            <div class="p-2 border-t border-gray-600">
+                <input id="chatbot-input" type="text" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Ask a question...">
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // Check authentication status
+        function checkAuth() {
+            const isAuthenticated = sessionStorage.getItem('analytics_authenticated');
+            if (!isAuthenticated) {
+                window.location.href = 'analytics-login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Initialize authentication check
+        if (!checkAuth()) {
+            // Redirect to login page
+            window.location.href = 'analytics-login.html';
+        }
+
+        // Logout function
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                sessionStorage.removeItem('analytics_authenticated');
+                window.location.href = 'analytics-login.html';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Toggle More menu
+            const moreBtn = document.getElementById('moreBtn');
+            const moreMenu = document.getElementById('moreMenu');
+            if (moreBtn && moreMenu) {
+                moreBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    moreMenu.classList.toggle('hidden');
+                });
+                document.addEventListener('click', () => moreMenu.classList.add('hidden'));
+            }
+            // Toast utility
+            function showToast(msg, type = 'info') {
+                const toast = document.createElement('div');
+                toast.className = `fixed top-6 right-6 z-50 px-4 py-2 rounded shadow-lg text-white font-semibold toast-${type}`;
+                toast.style.background = type === 'success' ? '#16a34a' : type === 'error' ? '#dc2626' : '#2563eb';
+                toast.textContent = msg;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 2000);
+            }
+            // PDF Export
+            document.getElementById('export-pdf-btn').onclick = function() {
+                showToast('Exporting alerts to PDF...', 'info');
+                
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    const currentTime = new Date().toLocaleString();
+                    
+                    // Header
+                    doc.setFontSize(20);
+                    doc.text('SOC Alerts Report', 20, 20);
+                    doc.setFontSize(12);
+                    doc.text(`Generated on: ${currentTime}`, 20, 30);
+                    doc.text(`Total Alerts: ${alerts.length}`, 20, 35);
+                    
+                    let yPosition = 50;
+                    
+                    if (alerts.length === 0) {
+                        doc.text('No alerts to display.', 20, yPosition);
+                    } else {
+                        alerts.forEach((alert, index) => {
+                            if (yPosition > 280) {
+                                doc.addPage();
+                                yPosition = 20;
+                            }
+                            
+                            // Alert header
+                            doc.setFontSize(14);
+                            doc.text(`Alert #${alert.id} - ${alert.type}`, 20, yPosition);
+                            yPosition += 10;
+                            
+                            // Alert details
+                            doc.setFontSize(10);
+                            doc.text(`Severity: ${alert.severity}`, 20, yPosition);
+                            yPosition += 7;
+                            doc.text(`Status: ${alert.status}`, 20, yPosition);
+                            yPosition += 7;
+                            doc.text(`Timestamp: ${alert.timestamp.toLocaleString()}`, 20, yPosition);
+                            yPosition += 7;
+                            doc.text(`Description: ${alert.description}`, 20, yPosition);
+                            yPosition += 15;
+                            
+                            // Add line separator
+                            if (index < alerts.length - 1) {
+                                doc.line(20, yPosition, 190, yPosition);
+                                yPosition += 10;
+                            }
+                        });
+                    }
+                    
+                    // Save the PDF
+                    doc.save(`SOC_Alerts_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+                    showToast('PDF exported successfully!', 'success');
+                } catch (error) {
+                    console.error('PDF generation error:', error);
+                    showToast('Error generating PDF', 'error');
+                }
+            };
+            
+            // Refresh alerts
+            document.getElementById('refresh-alerts-btn').onclick = function() {
+                // Prevent multiple clicks
+                if (this.disabled) return;
+                
+                // Store reference to button
+                const refreshBtn = this;
+                const originalHTML = '<i class="fas fa-sync-alt mr-1"></i>Refresh Alerts';
+                
+                // Add spinning animation to refresh button
+                refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Refreshing...';
+                refreshBtn.disabled = true;
+                refreshBtn.style.pointerEvents = 'none';
+                
+                showToast('Refreshing Threat Intelligence Dashboard...', 'info');
+                
+                // Add a subtle highlight effect to show refresh is happening
+                const dashboardSection = document.querySelector('#threat-intelligence-dashboard');
+                if (dashboardSection) {
+                    dashboardSection.style.transition = 'box-shadow 0.3s ease';
+                    dashboardSection.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.5)';
+                }
+                
+                // Reload the entire Threat Intelligence Dashboard section
+                setTimeout(() => {
+                    // Just re-render the existing alerts without adding new ones
+                renderAlerts();
+                    updateStats();
+                    
+                    // Reset button state
+                    refreshBtn.innerHTML = originalHTML;
+                    refreshBtn.disabled = false;
+                    refreshBtn.style.pointerEvents = 'auto';
+                    
+                    // Remove highlight effect
+                    if (dashboardSection) {
+                        dashboardSection.style.boxShadow = '';
+                    }
+                    
+                    showToast(`Threat Intelligence Dashboard refreshed! Showing ${alerts.length} alerts.`, 'success');
+                }, 500); // 0.5 second delay
+            };
+            // Severity filter
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.onclick = function() {
+                    const sev = this.dataset.severity;
+                    showToast(`Filtering: ${sev}`, 'info');
+                    let filtered = sev === 'All' ? alerts : alerts.filter(a => a.severity === sev);
+                    alertsTableBody.innerHTML = '';
+                    filtered.forEach(alert => {
+                        const row = document.createElement('tr');
+                        row.className = 'table-row cursor-pointer border-b border-gray-700 hover:bg-gray-800 transition-colors';
+                        row.dataset.alertId = alert.id;
+                        const severityIcon = alert.severity === 'High' ? 'fas fa-exclamation-triangle' : alert.severity === 'Medium' ? 'fas fa-exclamation-circle' : 'fas fa-info-circle';
+                        const statusIcon = alert.status === 'New' ? 'fas fa-clock' : alert.status === 'Remediated' ? 'fas fa-check-circle' : 'fas fa-times-circle';
+                        row.innerHTML = `
+                            <td class="p-3 font-medium text-blue-400">#${alert.id}</td>
+                            <td class="p-3 text-gray-300">${alert.timestamp.toLocaleTimeString()}</td>
+                            <td class="p-3 text-white">${alert.type}</td>
+                            <td class="p-3">
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full severity-${alert.severity.toLowerCase()} flex items-center w-fit">
+                                    <i class="${severityIcon} mr-1"></i>
+                                    ${alert.severity}
+                                </span>
+                            </td>
+                            <td class="p-3">
+                                <span onclick="event.stopPropagation();" class="px-3 py-1 text-xs font-semibold rounded-full status-${alert.status.toLowerCase()} flex items-center w-fit cursor-default">
+                                    <i class="${statusIcon} mr-1"></i>
+                                    ${alert.status}
+                                </span>
+                            </td>
+                            <td class="p-3">
+                                <div class="flex space-x-2">
+                                    <button onclick="event.stopPropagation(); displayAlertDetails(${alert.id})" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs"><i class="fas fa-eye mr-1"></i>View</button>
+                                    ${alert.status === 'New' ? `<button onclick="event.stopPropagation(); handleRemediation({target: {dataset: {alertId: ${alert.id}, stepIndex: 0}}})" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"><i class="fas fa-check mr-1"></i>Fix</button>` : ''}
+                                </div>
+                            </td>
+                        `;
+                        row.addEventListener('click', () => {
+                            window.location.href = `incident-details.html?id=${alert.id}`;
+                        });
+                        alertsTableBody.appendChild(row);
+                    });
+                };
+            });
+            // Initialize particles.js
+            particlesJS('particles-js', {
+                particles: {
+                    number: { value: 80 },
+                    color: { value: '#3b82f6' },
+                    shape: { type: 'circle' },
+                    opacity: { value: 0.5, random: true },
+                    size: { value: 3, random: true },
+                    line_linked: { enable: true, distance: 150, color: '#3b82f6', opacity: 0.4, width: 1 },
+                    move: { enable: true, speed: 2, direction: 'none', random: false, straight: false, out_mode: 'out', bounce: false }
+                },
+                interactivity: {
+                    detect_on: 'canvas',
+                    events: { onhover: { enable: true, mode: 'repulse' }, onclick: { enable: true, mode: 'push' }, resize: true },
+                    modes: { grab: { distance: 400, line_linked: { opacity: 1 } }, bubble: { distance: 400, size: 40, duration: 2, opacity: 8, speed: 3 }, repulse: { distance: 200, duration: 0.4 }, push: { particles_nb: 4 }, remove: { particles_nb: 2 } }
+                },
+                retina_detect: true
+            });
+
+            // --- DOM Elements ---
+            const totalEventsEl = document.getElementById('total-events');
+            const highAlertsEl = document.getElementById('high-alerts');
+            const mediumAlertsEl = document.getElementById('medium-alerts');
+            const lowAlertsEl = document.getElementById('low-alerts');
+            const alertsTableBody = document.getElementById('alerts-table-body');
+            const logFeedEl = document.getElementById('log-feed');
+            const alertDetailsPanel = document.getElementById('alert-details-content');
+            const chatbotToggle = document.getElementById('chatbot-toggle');
+            const chatbotWindow = document.getElementById('chatbot-window');
+            const chatbotMessages = document.getElementById('chatbot-messages');
+            const chatbotInput = document.getElementById('chatbot-input');
+            const currentTimeEl = document.getElementById('current-time');
+            
+            // Initialize real-time chart
+            const ctx = document.getElementById('threatChart').getContext('2d');
+            const threatChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Threats Detected',
+                        data: [],
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'Events Processed',
+                        data: [],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#d1d5db' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: '#374151' }
+                        },
+                        y: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: '#374151' }
+                        }
+                    }
+                }
+            });
+
+            // Update current time
+            function updateTime() {
+                const now = new Date();
+                currentTimeEl.textContent = now.toLocaleTimeString();
+            }
+            updateTime();
+            setInterval(updateTime, 1000);
+
+            // --- State Management ---
+            let totalEvents = 0;
+            let highAlerts = 0;
+            let mediumAlerts = 0;
+            let lowAlerts = 0;
+            let alertIdCounter = 1;
+            let alerts = [];
+
+            // Blocklists to simulate remediation actions taking effect
+            const blockedIPs = new Set();
+            const blockedUsers = new Set();
+            const blockedDestinations = new Set();
+
+            // --- Detection Logic State ---
+            const failedLoginAttempts = {}; // { ip: { count, timestamps: [] } }
+            const knownMaliciousDomains = ['malware-distro.ru', 'phishing-paradise.com', 'badfiles.net'];
+            
+            // --- Real-time Log Processing ---
+            const userPool = [
+                { name: 'alice', role: 'user' }, { name: 'bob', role: 'user' }, { name: 'charlie', role: 'admin' }, 
+                { name: 'dave', role: 'user' }, { name: 'eve', role: 'guest' }
+            ];
+            const ipPool = ['192.168.1.10', '10.0.0.5', '203.0.113.45', '172.16.31.88', '198.51.100.2'];
+            const actions = ['login_success', 'login_failure', 'file_access', 'file_upload', 'db_query', 'admin_login', 'delete_database', 'firewall_change'];
+            
+            function generateLog() {
+                const user = userPool[Math.floor(Math.random() * userPool.length)];
+                const ip = ipPool[Math.floor(Math.random() * ipPool.length)];
+                
+                // --- Real Threat Detection Scenarios ---
+                const threatType = Math.random();
+                if (threatType < 0.05) { // Brute Force Attack
+                    for (let i = 0; i < 5; i++) {
+                         setTimeout(() => createAndProcessLog(generateBruteForceLog('81.2.69.142', user.name)), i * 200);
+                    }
+                    return null; // Don't generate a normal log this cycle
+                }
+                if (threatType < 0.10) { // Insider Threat Detection
+                     return generateInsiderThreatLog();
+                }
+                if (threatType < 0.15) { // Data Exfiltration Detection
+                    return generateExfiltrationLog();
+                }
+                if (threatType < 0.20) { // Malware Detection
+                    return generateMalwareLog();
+                }
+
+                // Normal activity processing
+                return {
+                    timestamp: new Date().toISOString(),
+                    source_ip: ip,
+                    user: user.name,
+                    user_role: user.role,
+                    action: actions[Math.floor(Math.random() * actions.length)],
+                    status: 'success',
+                    data_size_kb: Math.floor(Math.random() * 1000),
+                    destination: ipPool.filter(i => i !== ip)[0]
+                };
+            }
+
+            // --- Real Threat Detection Log Generators ---
+            function generateBruteForceLog(ip, user) {
+                return {
+                    timestamp: new Date().toISOString(),
+                    source_ip: ip, user: user, user_role: 'user', action: 'login_failure', status: 'failure',
+                    data_size_kb: 1, destination: 'auth_server'
+                };
+            }
+            function generateInsiderThreatLog() {
+                 return {
+                    timestamp: new Date().toISOString(),
+                    source_ip: '10.1.1.25', user: 'dave', user_role: 'user', action: 'delete_database',
+                    status: 'denied', data_size_kb: 5, destination: 'prod_db_server'
+                };
+            }
+            function generateExfiltrationLog() {
+                return {
+                    timestamp: new Date().toISOString(),
+                    source_ip: '172.16.31.88', user: 'bob', user_role: 'user', action: 'file_upload',
+                    status: 'success', data_size_kb: 25000, destination: '104.26.10.189'
+                };
+            }
+            function generateMalwareLog() {
+                return {
+                    timestamp: new Date().toISOString(),
+                    source_ip: '192.168.1.10', user: 'alice', user_role: 'user', action: 'dns_query',
+                    status: 'success', data_size_kb: 1, destination: 'malware-distro.ru'
+                };
+            }
+
+            // --- Analysis & Detection Engine ---
+            function analyzeLog(log) {
+                // If entity is blocked, short-circuit and annotate feed
+                if (blockedIPs.has(log.source_ip) || blockedUsers.has(log.user) || blockedDestinations.has(log.destination)) {
+                    const blockedMsg = `Blocked event from ${blockedIPs.has(log.source_ip) ? 'IP ' + log.source_ip : blockedUsers.has(log.user) ? 'user ' + log.user : 'destination ' + log.destination}`;
+                    addLogToFeed({
+                        timestamp: new Date().toISOString(),
+                        source_ip: log.source_ip,
+                        user: log.user,
+                        action: 'blocked',
+                        status: 'denied'
+                    });
+                    return; // Do not analyze blocked events
+                }
+                // 1. Brute Force Detection
+                if (log.action === 'login_failure') {
+                    const ip = log.source_ip;
+                    if (!failedLoginAttempts[ip]) {
+                        failedLoginAttempts[ip] = { count: 0, timestamps: [] };
+                    }
+                    const now = Date.now();
+                    failedLoginAttempts[ip].count++;
+                    failedLoginAttempts[ip].timestamps.push(now);
+                    // Prune old attempts (older than 60s)
+                    failedLoginAttempts[ip].timestamps = failedLoginAttempts[ip].timestamps.filter(ts => now - ts < 60000);
+                    failedLoginAttempts[ip].count = failedLoginAttempts[ip].timestamps.length;
+
+                    if (failedLoginAttempts[ip].count >= 5) {
+                        const alertType = 'Brute Force Login Attempt';
+                        if (!isAlertActive(alertType, 'source_ip', ip)) {
+                            createAlert('High', alertType, 
+                                `Multiple failed login attempts detected from IP: ${ip}.`, 
+                                { source_ip: ip, user: log.user },
+                                [`Block IP Address: ${ip}`, `Reset and monitor user account: ${log.user}`]
+                            );
+                            failedLoginAttempts[ip] = { count: 0, timestamps: [] }; // Reset after alert
+                        }
+                    }
+                }
+                
+                // 2. Insider Privilege Misuse Detection
+                if (log.user_role === 'user' && (log.action.includes('delete_') || log.action.includes('admin_') || log.action.includes('change_'))) {
+                    const alertType = 'Insider Privilege Misuse';
+                    if (!isAlertActive(alertType, 'user', log.user)) {
+                         createAlert('Medium', alertType,
+                            `User '${log.user}' attempted an unauthorized privileged action: '${log.action}'.`,
+                            { source_ip: log.source_ip, user: log.user },
+                            [`Investigate user activity: ${log.user}`, `Confirm user permissions`, `Temporarily disable account: ${log.user}`]
+                        );
+                    }
+                }
+
+                // 3. Data Exfiltration Detection
+                if (log.action === 'file_upload' && log.data_size_kb > 20000) {
+                     const alertType = 'Potential Data Exfiltration';
+                     if (!isAlertActive(alertType, 'source_ip', log.source_ip)) {
+                         createAlert('High', alertType,
+                            `Unusually large data upload (${log.data_size_kb} KB) from ${log.source_ip} to ${log.destination}.`,
+                            { source_ip: log.source_ip, user: log.user, destination: log.destination },
+                            [`Isolate host: ${log.source_ip}`, `Analyze network traffic from host`, `Disable user account: ${log.user}`]
+                        );
+                     }
+                }
+                
+                // 4. Malware Indicator Detection
+                if (knownMaliciousDomains.includes(log.destination)) {
+                    const alertType = 'Malware Beaconing Detected';
+                    if (!isAlertActive(alertType, 'source_ip', log.source_ip)) {
+                         createAlert('High', alertType,
+                            `Host ${log.source_ip} contacted a known malicious domain: ${log.destination}.`,
+                            { source_ip: log.source_ip, user: log.user, destination: log.destination },
+                            [`Isolate host: ${log.source_ip}`, `Scan host for malware`, `Block domain on firewall: ${log.destination}`]
+                        );
+                    }
+                }
+
+                // 5. Low Severity: Unusual File Access Volume
+                if (log.action === 'file_access' && log.data_size_kb >= 500 && log.data_size_kb < 5000) {
+                    const alertType = 'Unusual File Access Volume';
+                    const uniqueKey = `${log.user}-${log.source_ip}`;
+                    if (!isAlertActive(alertType, 'key', uniqueKey)) {
+                        createAlert('Low', alertType,
+                            `User ${log.user} accessed a higher-than-usual volume of data (${log.data_size_kb} KB).`,
+                            { key: uniqueKey, source_ip: log.source_ip, user: log.user },
+                            [`Review recent file activity for ${log.user}`, `Confirm business justification`]
+                        );
+                    }
+                }
+
+                // 6. Low Severity: Unusual Database Activity
+                if (log.action === 'db_query' && log.data_size_kb >= 800 && log.data_size_kb < 8000) {
+                    const alertType = 'Unusual Database Activity';
+                    const uniqueKey = `${log.user}-${log.source_ip}`;
+                    if (!isAlertActive(alertType, 'key', uniqueKey)) {
+                        createAlert('Low', alertType,
+                            `Database activity by ${log.user} shows elevated volume (${log.data_size_kb} KB).`,
+                            { key: uniqueKey, source_ip: log.source_ip, user: log.user },
+                            [`Audit recent DB queries by ${log.user}`, `Validate access patterns`]
+                        );
+                    }
+                }
+            }
+
+            // --- UI Update Functions ---
+            function updateStats() {
+                totalEventsEl.textContent = totalEvents;
+                highAlertsEl.textContent = highAlerts;
+                mediumAlertsEl.textContent = mediumAlerts;
+                lowAlertsEl.textContent = lowAlerts;
+            }
+
+            function addLogToFeed(log) {
+                const logEntry = document.createElement('div');
+                logEntry.className = 'text-xs p-1 rounded';
+                let colorClass = 'text-gray-400';
+                if(log.status === 'failure' || log.status === 'denied') colorClass = 'text-red-400';
+                if(log.action.includes('login_success')) colorClass = 'text-green-400';
+
+                logEntry.innerHTML = `<span class="${colorClass}">${log.timestamp.split('T')[1].replace('Z','')}</span> | <span class="text-blue-400">${log.source_ip}</span> -> <span class="text-yellow-400">${log.action}</span> | User: ${log.user}`;
+                logFeedEl.prepend(logEntry);
+                if(logFeedEl.childElementCount > 100) {
+                    logFeedEl.removeChild(logFeedEl.lastChild);
+                }
+            }
+            
+            function createAndProcessLog(log) {
+                if (!log) return;
+                totalEvents++;
+                addLogToFeed(log);
+                analyzeLog(log);
+                updateStats();
+                updateChart();
+            }
+
+            // Update real-time chart
+            function updateChart() {
+                const now = new Date();
+                const timeLabel = now.toLocaleTimeString();
+                
+                // Add new data point
+                threatChart.data.labels.push(timeLabel);
+                threatChart.data.datasets[0].data.push(highAlerts + mediumAlerts + lowAlerts);
+                threatChart.data.datasets[1].data.push(totalEvents);
+                
+                // Keep only last 20 data points
+                if (threatChart.data.labels.length > 20) {
+                    threatChart.data.labels.shift();
+                    threatChart.data.datasets[0].data.shift();
+                    threatChart.data.datasets[1].data.shift();
+                }
+                
+                threatChart.update('none');
+            }
+
+            function isAlertActive(type, key, value) {
+                return alerts.some(a => a.type === type && a.details[key] === value && a.status === 'New');
+            }
+
+            function createAlert(severity, type, description, details, remediation) {
+                if(alerts.length === 0) alertsTableBody.innerHTML = ''; // Clear initial message
+                
+                const newAlert = {
+                    id: alertIdCounter++,
+                    timestamp: new Date(),
+                    severity, type, description, details, remediation,
+                    status: 'New'
+                };
+                alerts.unshift(newAlert);
+                
+                if (severity === 'High') highAlerts++;
+                else if (severity === 'Medium') mediumAlerts++;
+                else lowAlerts++;
+
+                updateStats();
+                renderAlerts();
+            }
+
+            function renderAlerts() {
+                alertsTableBody.innerHTML = '';
+                alerts.forEach(alert => {
+                    const row = document.createElement('tr');
+                    row.className = 'table-row cursor-pointer border-b border-gray-700 hover:bg-gray-800 transition-colors';
+                    row.dataset.alertId = alert.id;
+                    
+                    const severityIcon = alert.severity === 'High' ? 'fas fa-exclamation-triangle' : 
+                                       alert.severity === 'Medium' ? 'fas fa-exclamation-circle' : 'fas fa-info-circle';
+                    
+                    const statusIcon = alert.status === 'New' ? 'fas fa-clock' : 
+                                     alert.status === 'Remediated' ? 'fas fa-check-circle' : 'fas fa-times-circle';
+                    
+                    row.innerHTML = `
+                        <td class="p-3 font-medium text-blue-400">#${alert.id}</td>
+                        <td class="p-3 text-gray-300">${alert.timestamp.toLocaleTimeString()}</td>
+                        <td class="p-3 text-white">${alert.type}</td>
+                        <td class="p-3">
+                            <span class="px-3 py-1 text-xs font-semibold rounded-full severity-${alert.severity.toLowerCase()} flex items-center w-fit">
+                                <i class="${severityIcon} mr-1"></i>
+                                ${alert.severity}
+                            </span>
+                        </td>
+                        <td class="p-3">
+                            <span onclick="event.stopPropagation();" class="px-3 py-1 text-xs font-semibold rounded-full status-${alert.status.toLowerCase()} flex items-center w-fit cursor-default">
+                                <i class="${statusIcon} mr-1"></i>
+                                ${alert.status}
+                            </span>
+                        </td>
+                        <td class="p-3">
+                            <div class="flex space-x-2">
+                                <button onclick="event.stopPropagation(); displayAlertDetails(${alert.id})" 
+                                        class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-eye mr-1"></i>View
+                                </button>
+                                ${alert.status === 'New' ? `
+                                <button onclick="event.stopPropagation(); handleRemediation({target: {dataset: {alertId: ${alert.id}, stepIndex: 0}}})" 
+                                        class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-check mr-1"></i>Fix
+                                </button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    `;
+                    row.addEventListener('click', () => {
+                        window.location.href = `incident-details.html?id=${alert.id}`;
+                    });
+                    alertsTableBody.appendChild(row);
+                });
+            }
+
+            function displayAlertDetails(alertId) {
+                const alert = alerts.find(a => a.id === alertId);
+                if (!alert) return;
+
+                let detailsHtml = `
+                    <h3 class="text-lg font-bold text-white mb-2">Alert #${alert.id}: ${alert.type}</h3>
+                    <p class="text-sm mb-4">${alert.description}</p>
+                    <div class="mb-4 text-sm space-y-2">
+                        <strong class="text-gray-300">Affected Entities:</strong>
+                        ${Object.entries(alert.details).map(([key, value]) => `
+                            <div class="flex justify-between items-center bg-gray-800 p-2 rounded-md">
+                                <span class="font-mono text-gray-400">${key.replace('_',' ')}:</span>
+                                <span class="font-mono text-blue-300">${value}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div>
+                         <strong class="text-gray-300">Suggested Remediation:</strong>
+                         <div id="remediation-steps" class="mt-2 space-y-2">
+                            ${alert.status === 'New' ? alert.remediation.map((step, index) => `
+                                <button data-alert-id="${alert.id}" data-step-index="${index}" class="remediate-btn w-full text-left p-2 bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm transition-colors">
+                                    ${step}
+                                </button>
+                            `).join('') : '<p class="text-green-400">This incident has been remediated.</p>'}
+                         </div>
+                    </div>
+                `;
+                alertDetailsPanel.innerHTML = detailsHtml;
+
+                // Add event listeners to new buttons
+                document.querySelectorAll('.remediate-btn').forEach(btn => {
+                    btn.addEventListener('click', handleRemediation);
+                });
+            }
+
+            // Expose handlers for inline onclick usage
+            window.displayAlertDetails = displayAlertDetails;
+            window.handleRemediation = handleRemediation;
+
+            function handleRemediation(event) {
+                const alertId = parseInt(event.target.dataset.alertId);
+                const alert = alerts.find(a => a.id === alertId);
+                if (alert) {
+                    // Simulate active blocking based on alert context
+                    blockThreat(alert);
+                    alert.status = 'Remediated';
+                    renderAlerts();
+                    displayAlertDetails(alertId); // Refresh details view
+                }
+            }
+
+            function blockThreat(alert) {
+                // Block by source IP if present
+                if (alert.details && alert.details.source_ip) {
+                    blockedIPs.add(alert.details.source_ip);
+                    showToast(`Blocked source IP ${alert.details.source_ip}`, 'success');
+                }
+                // Block by user if present
+                if (alert.details && alert.details.user) {
+                    blockedUsers.add(alert.details.user);
+                    showToast(`Blocked user ${alert.details.user}`, 'success');
+                }
+                // Block by destination/domain if present
+                if (alert.details && alert.details.destination) {
+                    blockedDestinations.add(alert.details.destination);
+                    showToast(`Blocked destination ${alert.details.destination}`, 'success');
+                }
+            }
+
+            // --- Chatbot Logic ---
+            chatbotToggle.addEventListener('click', () => {
+                chatbotWindow.classList.toggle('hidden');
+            });
+            
+            chatbotInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter' && chatbotInput.value.trim() !== '') {
+                    const userMessage = chatbotInput.value.trim();
+                    addChatMessage(userMessage, 'user');
+                    chatbotInput.value = '';
+                    processChatbotQuery(userMessage);
+                }
+            });
+
+            function addChatMessage(message, sender) {
+                const messageEl = document.createElement('div');
+                if (sender === 'user') {
+                    messageEl.className = 'text-sm p-2 bg-gray-700 rounded-lg text-gray-200 mb-2 text-right';
+                } else {
+                    messageEl.className = 'text-sm p-2 bg-blue-900/50 rounded-lg text-gray-300 mb-2';
+                }
+                messageEl.textContent = message;
+                chatbotMessages.appendChild(messageEl);
+                chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+            }
+            
+            // Maintain lightweight conversation history for better responses
+            const chatbotHistory = [];
+            let chatbotBusy = false;
+
+            async function processChatbotQuery(query) {
+                if (chatbotBusy) return; // prevent double responses
+                chatbotBusy = true;
+                const GEMINI_API_KEY = 'AIzaSyCxT9FbWGDqjLN0mzSPuU6ImPb4jhQYOa0';
+                // Temporarily disable input while processing
+                const inputEl = document.getElementById('chatbot-input');
+                const prevDisabled = inputEl.disabled;
+                inputEl.disabled = true;
+
+                // Add user message to history
+                chatbotHistory.push({ role: 'user', parts: [{ text: query }] });
+                // Keep only the last 6 turns to reduce payload
+                const trimmed = [];
+                for (let i = Math.max(0, chatbotHistory.length - 12); i < chatbotHistory.length; i++) trimmed.push(chatbotHistory[i]);
+                const convo = trimmed;
+
+                // Lightweight friendly instant ack for greetings
+                // No local immediate replies to avoid double messages
+
+                try {
+                    const payload = {
+                        systemInstruction: {
+                            role: 'system',
+                            parts: [{ text: 'You are a friendly AI assistant embedded in a demo security dashboard website. Be warm and helpful for ANY kind of question (general or security). Keep answers concise and clear. For site help, guide navigation (login, analytics, cases, playbooks, assets). For security questions, give practical steps and short definitions. Ask a brief clarifying question only when needed. Prefer short paragraphs or 3–5 bullet points.' }]
+                        },
+                        generationConfig: { temperature: 0.6, topK: 40, topP: 0.9, maxOutputTokens: 768 },
+                        safetySettings: [
+                            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+                            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+                            { category: 'HARM_CATEGORY_SEXUAL', threshold: 'BLOCK_NONE' },
+                            { category: 'HARM_CATEGORY_DANGEROUS', threshold: 'BLOCK_NONE' }
+                        ],
+                        contents: convo
+                    };
+
+                    const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + encodeURIComponent(GEMINI_API_KEY), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await resp.json();
+                    let text = '';
+                    if (data && Array.isArray(data.candidates) && data.candidates.length > 0) {
+                        const parts = (data.candidates[0].content && data.candidates[0].content.parts) || [];
+                        text = parts.map(p => p.text).filter(Boolean).join('\n');
+                    }
+
+                    if (text) {
+                        chatbotHistory.push({ role: 'model', parts: [{ text }] });
+                        addChatMessage(text, 'bot');
+                    } else {
+                        addChatMessage("Happy to help! Could you share a bit more detail so I can answer better?", 'bot');
+                    }
+                } catch (e) {
+                    addChatMessage('I’m having trouble reaching the AI service right now. Please try again in a moment.', 'bot');
+                } finally {
+                    chatbotBusy = false;
+                    inputEl.disabled = prevDisabled;
+                }
+            }
+
+            // Add alert to the alerts array and update UI
+            function addAlert(alert) {
+                alerts.push(alert);
+                updateStats();
+                renderAlerts();
+            }
+
+            // Generate random alert for refresh functionality
+            function generateRandomAlert() {
+                const alertTypes = ['Brute Force Attack', 'Malware Detection', 'Insider Threat', 'Data Exfiltration', 'DDoS Attack', 'Phishing Attempt'];
+                const severities = ['High', 'Medium', 'Low'];
+                const statuses = ['New', 'In Progress', 'Remediated'];
+                const descriptions = [
+                    'Multiple failed login attempts detected from suspicious IP',
+                    'Malicious file detected and quarantined',
+                    'Unauthorized access attempt to sensitive data',
+                    'Large data transfer to external destination',
+                    'Distributed denial of service attack in progress',
+                    'Suspicious email with malicious attachment blocked'
+                ];
+                
+                const randomType = alertTypes[Math.floor(Math.random() * alertTypes.length)];
+                const randomSeverity = severities[Math.floor(Math.random() * severities.length)];
+                const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+                const randomDescription = descriptions[Math.floor(Math.random() * descriptions.length)];
+                
+                return {
+                    id: Date.now(),
+                    type: randomType,
+                    severity: randomSeverity,
+                    status: randomStatus,
+                    description: randomDescription,
+                    timestamp: new Date(),
+                    source_ip: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
+                    user: ['alice', 'bob', 'charlie', 'dave', 'eve'][Math.floor(Math.random() * 5)]
+                };
+            }
+
+            // --- Automatic Real-time Processing Loop ---
+            setInterval(() => {
+                const log = generateLog();
+                if (log) createAndProcessLog(log);
+            }, 2000); // Process security events every 2 seconds automatically
+        });
+    </script>
+</body>
+</html>

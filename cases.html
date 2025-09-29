@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cases - SmartSOC IRS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%); color: #d1d5db; }
+        .card { background: rgba(31,41,55,0.8); backdrop-filter: blur(10px); border: 1px solid rgba(55,65,81,0.3); border-radius: 0.75rem; }
+        .pill { padding: 2px 8px; border-radius: 9999px; font-size: 12px; font-weight: 600; }
+        .pill-high { background:#991b1b; color:#fecaca }
+        .pill-medium { background:#9a3412; color:#fdba74 }
+        .pill-low { background:#92400e; color:#fde68a }
+        .status-new { background:#1d4ed8; color:#dbeafe }
+        .status-inprogress { background:#ca8a04; color:#fef08a }
+        .status-closed { background:#166534; color:#dcfce7 }
+    </style>
+    <script>
+        function requireAuth(){ if(!sessionStorage.getItem('analytics_authenticated')){ sessionStorage.setItem('post_login_redirect', location.pathname); location.href='analytics-login.html'; } }
+        const MOCK_CASES = Array.from({length: 12}).map((_,i)=>({
+            id:i+1,
+            title:['Brute Force Login Attempt','Malware Detection','Insider Threat','Data Exfiltration'][i%4],
+            severity:['High','Medium','Low'][i%3],
+            status:['New','In Progress','Closed'][i%3],
+            assignee:['alice','bob','charlie','dave'][i%4],
+            createdAt:new Date(Date.now()-i*86400000).toISOString()
+        }));
+        document.addEventListener('DOMContentLoaded',()=>{
+            requireAuth();
+            const tbody = document.getElementById('cases-body');
+            function render(list){
+                tbody.innerHTML='';
+                list.forEach(c=>{
+                    const tr=document.createElement('tr');
+                    tr.className='border-b border-gray-700 hover:bg-gray-800 cursor-pointer';
+                    tr.innerHTML=`
+                        <td class="p-3 text-blue-400 font-medium">#${c.id}</td>
+                        <td class="p-3 text-white">${c.title}</td>
+                        <td class="p-3"><span class="pill ${c.severity==='High'?'pill-high':c.severity==='Medium'?'pill-medium':'pill-low'}">${c.severity}</span></td>
+                        <td class="p-3"><span class="pill ${c.status==='New'?'status-new':c.status==='In Progress'?'status-inprogress':'status-closed'}">${c.status}</span></td>
+                        <td class="p-3 text-gray-300">${c.assignee}</td>
+                        <td class="p-3 text-gray-400">${new Date(c.createdAt).toLocaleDateString()}</td>
+                    `;
+                    tr.addEventListener('click',()=>{ location.href=`incident-details.html?id=${c.id}`; });
+                    tbody.appendChild(tr);
+                })
+            }
+            render(MOCK_CASES);
+
+            // Filters
+            document.querySelectorAll('[data-filter]').forEach(btn=>{
+                btn.addEventListener('click',()=>{
+                    const f = btn.getAttribute('data-filter');
+                    const filtered = f==='All'?MOCK_CASES:MOCK_CASES.filter(c=>c.status===f || c.severity===f);
+                    render(filtered);
+                })
+            })
+            // particles
+            if (window.particlesJS) {
+                particlesJS('particles-js', {
+                    particles: { number:{ value:60 }, color:{ value:'#3b82f6' }, shape:{ type:'circle' }, opacity:{ value:0.3, random:true }, size:{ value:2, random:true }, line_linked:{ enable:true, distance:200, color:'#3b82f6', opacity:0.2, width:1 }, move:{ enable:true, speed:1 } },
+                    interactivity: { detect_on:'canvas', events:{ onhover:{ enable:true, mode:'repulse' }, onclick:{ enable:true, mode:'push' }, resize:true } },
+                    retina_detect:true
+                });
+            }
+        })
+    </script>
+</head>
+<body class="p-6">
+    <div id="particles-js" style="position:fixed; inset:0; z-index:-1"></div>
+    <div class="max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-6">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-folder-open text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-white">Cases</h1>
+                    <div class="text-sm text-gray-400">Triage and workflow</div>
+                </div>
+            </div>
+            <a href="index.html" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded">Back</a>
+        </header>
+
+        <div class="card p-4 mb-4 flex items-center space-x-2">
+            <span class="text-sm text-gray-400">Filter:</span>
+            <button class="bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded text-xs" data-filter="All">All</button>
+            <button class="bg-blue-700 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs" data-filter="New">New</button>
+            <button class="bg-yellow-700 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs" data-filter="In Progress">In Progress</button>
+            <button class="bg-green-700 hover:bg-green-600 text-white px-2 py-1 rounded text-xs" data-filter="Closed">Closed</button>
+            <button class="bg-red-700 hover:bg-red-600 text-white px-2 py-1 rounded text-xs" data-filter="High">High</button>
+            <button class="bg-orange-700 hover:bg-orange-600 text-white px-2 py-1 rounded text-xs" data-filter="Medium">Medium</button>
+            <button class="bg-yellow-600 hover:bg-yellow-500 text-white px-2 py-1 rounded text-xs" data-filter="Low">Low</button>
+        </div>
+
+        <div class="card p-4 overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead class="bg-gray-700">
+                    <tr>
+                        <th class="p-3">ID</th>
+                        <th class="p-3">Title</th>
+                        <th class="p-3">Severity</th>
+                        <th class="p-3">Status</th>
+                        <th class="p-3">Assignee</th>
+                        <th class="p-3">Created</th>
+                    </tr>
+                </thead>
+                <tbody id="cases-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
+
+

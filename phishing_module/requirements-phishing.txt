@@ -1,0 +1,45 @@
+# SIMULATION ONLY — DO NOT USE IN PRODUCTION
+# Additional requirements for phishing detection module
+
+# Web framework (if not already installed)
+Flask==2.3.3
+Werkzeug==2.3.7
+
+# Data processing
+numpy==1.24.3
+pandas==2.0.3
+
+# HTTP requests (for API calls)
+requests==2.31.0
+
+# JSON handling (built-in, but explicit for clarity)
+# json - built-in
+
+# URL parsing (built-in, but explicit for clarity)
+# urllib - built-in
+
+# Regular expressions (built-in, but explicit for clarity)
+# re - built-in
+
+# Random number generation (built-in, but explicit for clarity)
+# random - built-in
+
+# Time handling (built-in, but explicit for clarity)
+# time - built-in
+# datetime - built-in
+
+# Collections (built-in, but explicit for clarity)
+# collections - built-in
+
+# Hash functions (built-in, but explicit for clarity)
+# hashlib - built-in
+
+# File I/O (built-in, but explicit for clarity)
+# os - built-in
+# pathlib - built-in
+
+# Threading (built-in, but explicit for clarity)
+# threading - built-in
+
+# Type hints (built-in, but explicit for clarity)
+# typing - built-in

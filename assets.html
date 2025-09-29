@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assets - SmartSOC IRS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%); color: #d1d5db; }
+        .card { background: rgba(31,41,55,0.8); backdrop-filter: blur(10px); border: 1px solid rgba(55,65,81,0.3); border-radius: 0.75rem; }
+        .risk-low { background:#166534; color:#dcfce7 }
+        .risk-med { background:#9a3412; color:#fdba74 }
+        .risk-high { background:#991b1b; color:#fecaca }
+    </style>
+    <script>
+        function requireAuth(){ if(!sessionStorage.getItem('analytics_authenticated')){ sessionStorage.setItem('post_login_redirect', location.pathname); location.href='analytics-login.html'; } }
+        const ASSETS = Array.from({length: 20}).map((_,i)=>({
+            hostname:`host-${i+1}.corp.local`,
+            owner:['alice','bob','charlie','dave'][i%4],
+            criticality:['Low','Medium','High'][i%3],
+            risk: (i%3===2?'High':i%3===1?'Medium':'Low'),
+            lastPatch: new Date(Date.now()-i*86400000).toISOString(),
+            recentAlerts: Math.floor(Math.random()*7)
+        }));
+        document.addEventListener('DOMContentLoaded',()=>{
+            requireAuth();
+            const tbody=document.getElementById('assets-body');
+            ASSETS.forEach(a=>{
+                const tr=document.createElement('tr');
+                tr.className='border-b border-gray-700 hover:bg-gray-800';
+                tr.innerHTML=`
+                    <td class="p-3 text-white font-mono">${a.hostname}</td>
+                    <td class="p-3 text-gray-300">${a.owner}</td>
+                    <td class="p-3 text-gray-300">${a.criticality}</td>
+                    <td class="p-3"><span class="px-2 py-1 rounded text-xs font-semibold ${a.risk==='High'?'risk-high':a.risk==='Medium'?'risk-med':'risk-low'}">${a.risk}</span></td>
+                    <td class="p-3 text-gray-400">${new Date(a.lastPatch).toLocaleDateString()}</td>
+                    <td class="p-3 text-blue-300">${a.recentAlerts}</td>
+                `;
+                tbody.appendChild(tr);
+            })
+            if (window.particlesJS) {
+                particlesJS('particles-js', {
+                    particles: { number:{ value:60 }, color:{ value:'#3b82f6' }, shape:{ type:'circle' }, opacity:{ value:0.3, random:true }, size:{ value:2, random:true }, line_linked:{ enable:true, distance:200, color:'#3b82f6', opacity:0.2, width:1 }, move:{ enable:true, speed:1 } },
+                    interactivity: { detect_on:'canvas', events:{ onhover:{ enable:true, mode:'repulse' }, onclick:{ enable:true, mode:'push' }, resize:true } },
+                    retina_detect:true
+                });
+            }
+        })
+    </script>
+</head>
+<body class="p-6">
+    <div id="particles-js" style="position:fixed; inset:0; z-index:-1"></div>
+    <div class="max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-6">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-server text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-white">Asset Inventory</h1>
+                    <div class="text-sm text-gray-400">Hosts, owners, risk, recency</div>
+                </div>
+            </div>
+            <a href="index.html" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded">Back</a>
+        </header>
+
+        <div class="card p-4 overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead class="bg-gray-700">
+                    <tr>
+                        <th class="p-3">Hostname</th>
+                        <th class="p-3">Owner</th>
+                        <th class="p-3">Criticality</th>
+                        <th class="p-3">Risk</th>
+                        <th class="p-3">Last Patch</th>
+                        <th class="p-3">Recent Alerts</th>
+                    </tr>
+                </thead>
+                <tbody id="assets-body"></tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
+
+

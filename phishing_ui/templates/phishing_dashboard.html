@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing Detection Dashboard - SIMULATION</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/phishing_ui/static/phishing.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+            color: #d1d5db;
+            overflow-x: hidden;
+        }
+        
+        .card {
+            background: rgba(31, 41, 55, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(55, 65, 81, 0.3);
+            border-radius: 0.75rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+        
+        .verdict-safe { color: #10b981; }
+        .verdict-suspicious { color: #f59e0b; }
+        .verdict-malicious { color: #ef4444; }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, #ef4444 0%, #f59e0b 50%, #10b981 100%);
+            height: 8px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .simulation-banner {
+            background: linear-gradient(90deg, #f59e0b, #ef4444);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen p-6">
+        <!-- Simulation Banner -->
+        <div class="simulation-banner">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            SIMULATED Phishing Detection Demo — Hackathon Project
+            <i class="fas fa-exclamation-triangle ml-2"></i>
+        </div>
+
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-bold text-white mb-4">
+                    <i class="fas fa-shield-alt text-blue-400 mr-3"></i>
+                    Phishing Detection Dashboard
+                </h1>
+                <p class="text-gray-400 text-lg">AI-Powered Threat Analysis & Prevention</p>
+            </div>
+
+            <!-- Main Content -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Input Panel -->
+                <div class="card p-6">
+                    <h2 class="text-2xl font-semibold text-white mb-6">
+                        <i class="fas fa-upload mr-2"></i>
+                        Content Analysis
+                    </h2>
+                    
+                    <form id="analysisForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Content Type</label>
+                            <select id="contentType" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500">
+                                <option value="email">Email</option>
+                                <option value="sms">SMS</option>
+                                <option value="url">URL</option>
+                                <option value="html">HTML</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Content to Analyze</label>
+                            <textarea id="content" rows="6" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500" 
+                                placeholder="Paste your content here..."></textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">URL (optional)</label>
+                            <input type="url" id="url" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500" 
+                                placeholder="https://example.com">
+                        </div>
+                        
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200">
+                            <i class="fas fa-search mr-2"></i>
+                            Analyze Content
+                        </button>
+                    </form>
+                    
+                    <!-- Sample Inputs -->
+                    <div class="mt-6">
+                        <h3 class="text-lg font-semibold text-white mb-3">Sample Inputs</h3>
+                        <div class="space-y-2">
+                            <button onclick="loadSample('benign')" class="w-full text-left p-2 bg-gray-700 hover:bg-gray-600 rounded text-sm">
+                                <i class="fas fa-check-circle text-green-400 mr-2"></i>
+                                Benign Email
+                            </button>
+                            <button onclick="loadSample('phishing')" class="w-full text-left p-2 bg-gray-700 hover:bg-gray-600 rounded text-sm">
+                                <i class="fas fa-exclamation-triangle text-red-400 mr-2"></i>
+                                Phishing Email
+                            </button>
+                            <button onclick="loadSample('suspicious')" class="w-full text-left p-2 bg-gray-700 hover:bg-gray-600 rounded text-sm">
+                                <i class="fas fa-question-circle text-yellow-400 mr-2"></i>
+                                Suspicious URL
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Panel -->
+                <div class="card p-6">
+                    <h2 class="text-2xl font-semibold text-white mb-6">
+                        <i class="fas fa-chart-line mr-2"></i>
+                        Analysis Results
+                    </h2>
+                    
+                    <div id="resultsContainer" class="space-y-6">
+                        <div class="text-center text-gray-400 py-8">
+                            <i class="fas fa-search text-4xl mb-4"></i>
+                            <p>Submit content to see analysis results</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Component Scores -->
+            <div id="componentScores" class="mt-8 hidden">
+                <div class="card p-6">
+                    <h3 class="text-xl font-semibold text-white mb-4">Component Analysis</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="text-center">
+                            <div class="text-sm text-gray-400 mb-2">Text Analysis</div>
+                            <div class="text-2xl font-bold text-blue-400" id="textScore">0.0</div>
+                            <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
+                                <div class="bg-blue-400 h-2 rounded-full" id="textBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-sm text-gray-400 mb-2">Visual Analysis</div>
+                            <div class="text-2xl font-bold text-purple-400" id="visualScore">0.0</div>
+                            <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
+                                <div class="bg-purple-400 h-2 rounded-full" id="visualBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-sm text-gray-400 mb-2">Graph Analysis</div>
+                            <div class="text-2xl font-bold text-green-400" id="graphScore">0.0</div>
+                            <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
+                                <div class="bg-green-400 h-2 rounded-full" id="graphBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-sm text-gray-400 mb-2">Adversarial</div>
+                            <div class="text-2xl font-bold text-red-400" id="adversarialScore">0.0</div>
+                            <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
+                                <div class="bg-red-400 h-2 rounded-full" id="adversarialBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Explainability -->
+            <div id="explainability" class="mt-8 hidden">
+                <div class="card p-6">
+                    <h3 class="text-xl font-semibold text-white mb-4">Explainability</h3>
+                    <div id="explainabilityContent" class="space-y-4">
+                        <!-- Explainability content will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Graph Visualization -->
+            <div id="graphSection" class="mt-8">
+                <div class="card p-6">
+                    <h3 class="text-xl font-semibold text-white mb-4">Domain Graph (URL only)</h3>
+                    <div id="graphContainer"></div>
+                </div>
+            </div>
+
+            <!-- JSON Toggle -->
+            <div class="mt-8">
+                <div class="card p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-semibold text-white">Raw API Response</h3>
+                        <button id="toggleJson" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm">
+                            <i class="fas fa-code mr-2"></i>
+                            Toggle JSON View
+                        </button>
+                    </div>
+                    <pre id="jsonResponse" class="bg-gray-800 p-4 rounded text-sm text-gray-300 overflow-x-auto hidden"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/phishing_ui/static/phishing.js"></script>
+    <script>
+        // Sample data
+        const samples = {
+            benign: {
+                type: 'email',
+                content: `Hi John,\n\nI hope you're doing well. I wanted to follow up on our meeting yesterday about the quarterly report. Please let me know if you need any additional information.\n\nBest regards,\nSarah`,
+                url: ''
+            },
+            phishing: {
+                type: 'email',
+                content: `URGENT: Your account has been compromised!\n\nWe have detected unusual activity on your account. Please verify your identity immediately by clicking the link below:\n\nhttps://paypal-security.tk/verify-account\n\nEnter your username and password to secure your account.\n\nThis is a limited time offer - act now!\n\nPayPal Security Team`,
+                url: ''
+            },
+            suspicious: {
+                type: 'url',
+                content: 'https://facebook-verify.cf/login',
+                url: 'https://facebook-verify.cf/login'
+            }
+        };
+
+        // Load sample data
+        function loadSample(type) {
+            const sample = samples[type];
+            document.getElementById('contentType').value = sample.type;
+            document.getElementById('content').value = sample.content;
+            document.getElementById('url').value = sample.url;
+        }
+
+        // Inline sample loader remains; form handlers come from phishing.js
+    </script>
+</body>
+</html>

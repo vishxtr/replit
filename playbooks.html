@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automation Playbooks - SmartSOC IRS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%); color: #d1d5db; }
+        .card { background: rgba(31,41,55,0.8); backdrop-filter: blur(10px); border: 1px solid rgba(55,65,81,0.3); border-radius: 0.75rem; }
+        .step { display:flex; align-items:center; gap:8px; }
+        .step::before { content:""; width:10px; height:10px; border-radius:9999px; background:#3b82f6 }
+    </style>
+    <script>
+        function requireAuth(){ if(!sessionStorage.getItem('analytics_authenticated')){ sessionStorage.setItem('post_login_redirect', location.pathname); location.href='analytics-login.html'; } }
+        const PLAYBOOKS = [
+            { name:'Block Malicious IP', steps:['Validate indicator','Update firewall rule','Invalidate sessions','Notify SOC'], est:'30s' },
+            { name:'Contain Malware Host', steps:['Quarantine host','Isolate network','Initiate AV scan','Collect forensics'], est:'2m' },
+            { name:'Reset Compromised Account', steps:['Revoke tokens','Force password reset','Review recent activity','Enable MFA'], est:'1m' }
+        ];
+        document.addEventListener('DOMContentLoaded',()=>{
+            requireAuth();
+            const list=document.getElementById('playbook-list');
+            PLAYBOOKS.forEach((p,idx)=>{
+                const card=document.createElement('div');
+                card.className='card p-4';
+                card.innerHTML=`
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-white font-semibold">${p.name}</h3>
+                        <span class="text-xs text-gray-400">~ ${p.est}</span>
+                    </div>
+                    <div class="space-y-2 mb-3">${p.steps.map(s=>`<div class='step text-sm text-gray-300'>${s}</div>`).join('')}</div>
+                    <button data-index="${idx}" class="run-btn bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">Run</button>
+                `;
+                list.appendChild(card);
+            })
+
+            document.querySelectorAll('.run-btn').forEach(btn=>{
+                btn.addEventListener('click',()=>{
+                    const p = PLAYBOOKS[parseInt(btn.getAttribute('data-index'))];
+                    executePlaybook(p);
+                })
+            })
+            if (window.particlesJS) {
+                particlesJS('particles-js', {
+                    particles: { number:{ value:60 }, color:{ value:'#3b82f6' }, shape:{ type:'circle' }, opacity:{ value:0.3, random:true }, size:{ value:2, random:true }, line_linked:{ enable:true, distance:200, color:'#3b82f6', opacity:0.2, width:1 }, move:{ enable:true, speed:1 } },
+                    interactivity: { detect_on:'canvas', events:{ onhover:{ enable:true, mode:'repulse' }, onclick:{ enable:true, mode:'push' }, resize:true } },
+                    retina_detect:true
+                });
+            }
+        })
+        function executePlaybook(pb){
+            const log=document.getElementById('run-log');
+            const header=document.createElement('div');
+            header.className='text-sm text-blue-300 mt-2';
+            header.textContent=`Running: ${pb.name}`;
+            log.prepend(header);
+            let delay=0;
+            pb.steps.forEach(step=>{
+                setTimeout(()=>{
+                    const row=document.createElement('div');
+                    row.className='text-xs text-green-400';
+                    row.textContent=`[${new Date().toLocaleTimeString()}] ${step} — OK`;
+                    log.prepend(row);
+                }, delay+=600);
+            })
+        }
+    </script>
+</head>
+<body class="p-6">
+    <div id="particles-js" style="position:fixed; inset:0; z-index:-1"></div>
+    <div class="max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-6">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-diagram-project text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-white">Automation Playbooks</h1>
+                    <div class="text-sm text-gray-400">SOAR-style workflows</div>
+                </div>
+            </div>
+            <a href="index.html" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded">Back</a>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 space-y-4" id="playbook-list"></div>
+            <div class="card p-4">
+                <h2 class="text-xl font-semibold text-white mb-3">Execution Log</h2>
+                <div id="run-log" class="h-80 overflow-y-auto bg-gray-900 rounded p-3"></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+
