@@ -1,19 +1,18 @@
-# Core app UIs
+# Core UI and Backend
 streamlit>=1.28.0
-
-# Backend APIs
 fastapi>=0.110.0
 uvicorn[standard]>=0.23.0
+Flask==2.3.3
+Werkzeug==2.3.7
 
-# ML / Data utilities
+# Data Science and ML
 scikit-learn>=1.3.0
 pandas==2.0.3
 numpy==1.24.3
 
-# Phishing demo API (Flask-based components)
-Flask==2.3.3
-Werkzeug==2.3.7
-
-# HTTP client
+# HTTP and API
 requests==2.31.0
 
+# Note: Built-in modules (json, urllib, re, random, time, datetime, 
+# collections, hashlib, os, pathlib, threading, typing) do not need 
+# to be listed in requirements.txt
