@@ -9,13 +9,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+        <link rel="stylesheet" href="assets/styles.css">
+        <link rel="stylesheet" href="assets/shared-buttons.css">
+        <link rel="stylesheet" href="assets/chatbot.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        :root { --sidebar-width: 16rem; --sidebar-width-collapsed: 4.5rem; --sidebar-transition-duration: 300ms; --sidebar-transition-ease: ease-in-out; }
         body {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
             color: #d1d5db;
+            transition: padding-left var(--sidebar-transition-duration) var(--sidebar-transition-ease);
         }
 
         #particles-js {
@@ -89,14 +93,72 @@
         .threat-item.low::before {
             background: #10b981;
         }
+        /* Sidebar state */
+        body.desktop-with-sidebar { padding-left: var(--sidebar-width); }
+        body.desktop-with-sidebar-collapsed { padding-left: var(--sidebar-width-collapsed); }
+        #sidebar { width: var(--sidebar-width); transition: width var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform var(--sidebar-transition-duration) var(--sidebar-transition-ease); }
+        #sidebar.collapsed { width: var(--sidebar-width-collapsed); }
+        #sidebar.collapsed nav a { justify-content: center; gap: 0; }
+        #sidebar.collapsed nav a span.truncate { display: none; }
+        #sidebar.collapsed .brand-text { display: none; }
+        body.sidebar-modal-open { overflow: hidden; }
+        /* Sidebar link styling */
+        #sidebar nav a.sidebar-link { position: relative; transition: background-color var(--sidebar-transition-duration) var(--sidebar-transition-ease), color var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform 150ms ease; border-radius: 0.5rem; }
+        #sidebar nav a.sidebar-link::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-top-left-radius: 6px; border-bottom-left-radius: 6px; background: linear-gradient(180deg, rgba(99,102,241,0.8), rgba(147,51,234,0.8)); opacity: 0; transform: scaleY(0.4); transition: opacity var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform var(--sidebar-transition-duration) var(--sidebar-transition-ease); }
+        #sidebar nav a.sidebar-link:hover::before, #sidebar nav a.sidebar-link.active::before { opacity: 1; transform: scaleY(1); }
+        #sidebar nav a.sidebar-link:hover { background: rgba(30, 41, 59, 0.8); }
+        #sidebar nav a.sidebar-link.active { background: rgba(30, 41, 59, 0.95); color: #fff; }
+        #sidebar nav a.sidebar-link .sidebar-icon { transition: color var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform 150ms ease; color: #94a3b8; }
+        #sidebar nav a.sidebar-link:hover .sidebar-icon, #sidebar nav a.sidebar-link.active .sidebar-icon { color: #fff; transform: translateX(1px); }
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+        }
     </style>
 </head>
 
 <body class="p-4 sm:p-6 lg:p-8">
+    <!-- Sidebar: SmartSOC -->
+    <button id="sidebar-mobile-toggle" class="lg:hidden fixed top-3 left-3 z-50 inline-flex items-center justify-center rounded-md p-2 text-slate-200 bg-slate-900/90 border border-slate-800 hover:bg-slate-800 transition" aria-controls="sidebar" aria-expanded="false" aria-label="Open sidebar">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div id="sidebar-overlay" class="hidden lg:hidden fixed inset-0 z-40 bg-black/40"></div>
+    <aside id="sidebar" class="fixed z-50 top-0 left-0 h-screen bg-slate-900 text-slate-200 border-r border-slate-800 transform -translate-x-full lg:translate-x-0" role="dialog" aria-modal="true" aria-label="Sidebar">
+        <div class="flex items-center justify-between px-4 py-4 border-b border-slate-800">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-inner">◆</div>
+                <span class="brand-text text-sm font-semibold truncate hidden sm:block">SmartSOC</span>
+            </div>
+            <button id="sidebar-collapse-toggle" class="hidden lg:inline-flex items-center justify-center rounded-md p-2 text-slate-300 hover:bg-slate-800 transition" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">
+                <i id="sidebar-collapse-icon-top" class="fas fa-angle-left"></i>
+            </button>
+            <button id="sidebar-close" class="lg:hidden inline-flex items-center justify-center rounded-md p-2 text-slate-300 hover:bg-slate-800 transition" aria-label="Close sidebar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <nav class="px-2 py-3 overflow-y-auto h-[calc(100vh-3.25rem)]">
+            <ul class="space-y-1">
+                <li><a href="index.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-gauge-high w-5"></i><span class="truncate text-sm font-medium">Dashboard</span></a></li>
+                <li><a href="threat-detection.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-triangle-exclamation w-5"></i><span class="truncate text-sm font-medium">Threat Detection</span></a></li>
+                <li><a href="cases.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-fire w-5"></i><span class="truncate text-sm font-medium">Incidents</span></a></li>
+                <li><a href="threat-intel.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-brain w-5"></i><span class="truncate text.sm font-medium">Threat Intel</span></a></li>
+                <li><a href="analytics.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-white bg-slate-800" style="box-shadow: inset 3px 0 0 0 rgb(99 102 241)"><i class="sidebar-icon fas fa-chart-line w-5"></i><span class="truncate text-sm font-medium">Analytics</span></a></li>
+                <li><a href="playbooks.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-diagram-project w-5"></i><span class="truncate text-sm font-medium">Automation Playbooks</span></a></li>
+                <li><a href="assets.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-users w-5"></i><span class="truncate text-sm font-medium">Users</span></a></li>
+                <li><a href="settings.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-gear w-5"></i><span class="truncate text-sm font-medium">Settings</span></a></li>
+            </ul>
+        </nav>
+        <div class="hidden lg:flex absolute bottom-0 left-0 right-0 p-2 border-t border-slate-800">
+            <button id="sidebar-collapse-toggle-bottom" class="w-full inline-flex items-center justify-center gap-2 rounded-md px-2 py-2 text-xs text-slate-300 hover:bg-slate-800 transition" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">
+                <i id="sidebar-collapse-icon-bottom" class="fas fa-angle-left"></i>
+            </button>
+        </div>
+    </aside>
+
     <!-- Particles Background -->
     <div id="particles-js"></div>
 
-    <div class="max-w-7xl mx-auto relative z-10">
+    <div id="main-container" class="max-w-7xl mx-auto relative z-10">
         <!-- Header -->
         <header class="flex justify-between items-center mb-8">
             <div class="flex items-center space-x-4">
@@ -357,7 +419,7 @@
                         <canvas id="securityScoreChart" width="128" height="128"></canvas>
                         <div class="absolute inset-0 flex items-center justify-center">
                             <div class="text-center">
-                                <div class="text-2xl font-bold text-white">85</div>
+                                <div class="text-2xl font-bold text-white">95</div>
                                 <div class="text-sm text-gray-400">Security Score</div>
                             </div>
                         </div>
@@ -427,6 +489,7 @@
         </div>
     </div>
 
+    <script src="assets/particles-init.js"></script>
     <script>
         // Check authentication status
         function checkAuth() {
@@ -453,24 +516,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Initialize particles.js
-            particlesJS('particles-js', {
-                particles: {
-                    number: { value: 40 },
-                    color: { value: '#3b82f6' },
-                    shape: { type: 'circle' },
-                    opacity: { value: 0.3, random: true },
-                    size: { value: 2, random: true },
-                    line_linked: { enable: true, distance: 200, color: '#3b82f6', opacity: 0.2, width: 1 },
-                    move: { enable: true, speed: 1, direction: 'none', random: false, straight: false, out_mode: 'out', bounce: false }
-                },
-                interactivity: {
-                    detect_on: 'canvas',
-                    events: { onhover: { enable: true, mode: 'repulse' }, onclick: { enable: true, mode: 'push' }, resize: true },
-                    modes: { grab: { distance: 400, line_linked: { opacity: 1 } }, bubble: { distance: 400, size: 40, duration: 2, opacity: 8, speed: 3 }, repulse: { distance: 200, duration: 0.4 }, push: { particles_nb: 4 }, remove: { particles_nb: 2 } }
-                },
-                retina_detect: true
-            });
+            // Particles background is initialized via assets/particles-init.js
 
             // Update current time
             function updateTime() {
@@ -674,6 +720,97 @@
             };
         });
     </script>
+    <script src="assets/button-functionality.js"></script>
+    <script src="assets/chatbot.js"></script>
 </body>
+<script>
+    (function(){
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const mobileToggle = document.getElementById('sidebar-mobile-toggle');
+        const closeBtn = document.getElementById('sidebar-close');
+        const collapseTop = document.getElementById('sidebar-collapse-toggle');
+        const collapseBottom = document.getElementById('sidebar-collapse-toggle-bottom');
+        const STORAGE_KEY = 'smartsoc.sidebar.collapsed';
+        let collapsed = false;
+        try { const persisted = localStorage.getItem(STORAGE_KEY); if (persisted !== null) collapsed = persisted === 'true'; } catch(e) {}
+        function applyCollapsedState(){
+            const isDesktop = window.innerWidth >= 1024;
+            if (isDesktop) {
+                document.body.classList.add('desktop-with-sidebar');
+                document.body.classList.toggle('desktop-with-sidebar-collapsed', collapsed);
+                sidebar.classList.toggle('collapsed', collapsed);
+                const topIcon = document.getElementById('sidebar-collapse-icon-top');
+                const botIcon = document.getElementById('sidebar-collapse-icon-bottom');
+                const expanded = !collapsed;
+                collapseTop && collapseTop.setAttribute('aria-expanded', String(expanded));
+                collapseBottom && collapseBottom.setAttribute('aria-expanded', String(expanded));
+                if (topIcon) topIcon.className = expanded ? 'fas fa-angle-left' : 'fas fa-angle-right';
+                if (botIcon) botIcon.className = expanded ? 'fas fa-angle.left' : 'fas fa-angle-right';
+            } else {
+                document.body.classList.remove('desktop-with-sidebar');
+                document.body.classList.remove('desktop-with-sidebar-collapsed');
+                sidebar.classList.remove('collapsed');
+            }
+        }
+        function setCollapsed(next){ collapsed = next; try{localStorage.setItem(STORAGE_KEY, String(collapsed));}catch(e){} applyCollapsedState(); }
+        function openMobile(){ sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); document.body.classList.add('sidebar-modal-open'); mobileToggle && mobileToggle.setAttribute('aria-expanded','true'); closeBtn && closeBtn.focus && closeBtn.focus(); }
+        function closeMobile(){ sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); document.body.classList.remove('sidebar-modal-open'); mobileToggle && mobileToggle.setAttribute('aria-expanded','false'); mobileToggle && mobileToggle.focus && mobileToggle.focus(); }
+        mobileToggle && mobileToggle.addEventListener('click', openMobile);
+        overlay && overlay.addEventListener('click', closeMobile);
+        closeBtn && closeBtn.addEventListener('click', closeMobile);
+        const toggle = ()=> setCollapsed(!collapsed);
+        collapseTop && collapseTop.addEventListener('click', toggle);
+        collapseBottom && collapseBottom.addEventListener('click', toggle);
+        document.addEventListener('keydown', (e)=>{ if((e.key==='Escape'||e.key==='Esc') && window.innerWidth<1024 && !sidebar.classList.contains('-translate-x-full')){ closeMobile(); } });
+        function init(){ if (window.innerWidth >= 1024){ sidebar.classList.remove('-translate-x-full'); overlay.classList.add('hidden'); } else { document.body.classList.remove('desktop-with-sidebar'); document.body.classList.remove('desktop-with-sidebar-collapsed'); sidebar.classList.remove('collapsed'); } applyCollapsedState(); }
+        init();
+        // Active link highlighting
+        (function markActiveLinks(){
+            const links = sidebar.querySelectorAll('nav a');
+            const current = location.pathname.split('/').pop();
+            links.forEach(a => {
+                const href = a.getAttribute('href') || '';
+                const file = href.split('/').pop();
+                const isActive = file === '' ? current === '' : current === file;
+                a.classList.toggle('active', isActive);
+                if (isActive) {
+                    a.style.boxShadow = 'inset 3px 0 0 0 rgb(99 102 241)';
+                    a.classList.add('text-white');
+                    a.classList.add('bg-slate-800');
+                }
+            });
+        })();
+        // Keyboard navigation and collapsed tooltips
+        (function enhanceA11y(){
+            const navLinks = Array.from(sidebar.querySelectorAll('nav a'));
+            sidebar.addEventListener('keydown', (e) => {
+                if (!['ArrowDown','ArrowUp','Home','End'].includes(e.key)) return;
+                const active = document.activeElement;
+                const idx = navLinks.indexOf(active);
+                let nextIdx = idx;
+                if (e.key === 'ArrowDown') nextIdx = Math.min(navLinks.length-1, idx + 1);
+                if (e.key === 'ArrowUp') nextIdx = Math.max(0, idx - 1);
+                if (e.key === 'Home') nextIdx = 0;
+                if (e.key === 'End') nextIdx = navLinks.length - 1;
+                if (nextIdx !== idx && navLinks[nextIdx]) {
+                    e.preventDefault();
+                    navLinks[nextIdx].focus();
+                }
+            });
+            function syncCollapsedTooltips() {
+                const isCollapsed = sidebar.classList.contains('collapsed') && window.innerWidth >= 1024;
+                navLinks.forEach(a => {
+                    const label = (a.textContent || '').trim();
+                    if (isCollapsed) a.setAttribute('title', label);
+                    else a.removeAttribute('title');
+                });
+            }
+            syncCollapsedTooltips();
+            window.addEventListener('resize', syncCollapsedTooltips);
+        })();
+        window.addEventListener('resize', applyCollapsedState);
+    })();
+</script>
 
 </html>

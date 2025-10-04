@@ -6,14 +6,39 @@
     <title>Assets - SmartSOC IRS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/styles.css">
+    <link rel="stylesheet" href="assets/shared-buttons.css">
+    <link rel="stylesheet" href="assets/chatbot.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%); color: #d1d5db; }
+        :root { --sidebar-width: 16rem; --sidebar-width-collapsed: 4.5rem; --sidebar-transition-duration: 300ms; --sidebar-transition-ease: ease-in-out; }
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%); color: #d1d5db; transition: padding-left var(--sidebar-transition-duration) var(--sidebar-transition-ease); }
         .card { background: rgba(31,41,55,0.8); backdrop-filter: blur(10px); border: 1px solid rgba(55,65,81,0.3); border-radius: 0.75rem; }
         .risk-low { background:#166534; color:#dcfce7 }
         .risk-med { background:#9a3412; color:#fdba74 }
         .risk-high { background:#991b1b; color:#fecaca }
+        /* Sidebar state */
+        body.desktop-with-sidebar { padding-left: var(--sidebar-width); }
+        body.desktop-with-sidebar-collapsed { padding-left: var(--sidebar-width-collapsed); }
+        #sidebar { width: var(--sidebar-width); transition: width var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform var(--sidebar-transition-duration) var(--sidebar-transition-ease); }
+        #sidebar.collapsed { width: var(--sidebar-width-collapsed); }
+        #sidebar.collapsed nav a { justify-content: center; gap: 0; }
+        #sidebar.collapsed nav a span.truncate { display: none; }
+        #sidebar.collapsed .brand-text { display: none; }
+        body.sidebar-modal-open { overflow: hidden; }
+        /* Sidebar link styling */
+        #sidebar nav a.sidebar-link { position: relative; transition: background-color var(--sidebar-transition-duration) var(--sidebar-transition-ease), color var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform 150ms ease; border-radius: 0.5rem; }
+        #sidebar nav a.sidebar-link::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-top-left-radius: 6px; border-bottom-left-radius: 6px; background: linear-gradient(180deg, rgba(99,102,241,0.8), rgba(147,51,234,0.8)); opacity: 0; transform: scaleY(0.4); transition: opacity var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform var(--sidebar-transition-duration) var(--sidebar-transition-ease); }
+        #sidebar nav a.sidebar-link:hover::before, #sidebar nav a.sidebar-link.active::before { opacity: 1; transform: scaleY(1); }
+        #sidebar nav a.sidebar-link:hover { background: rgba(30, 41, 59, 0.8); }
+        #sidebar nav a.sidebar-link.active { background: rgba(30, 41, 59, 0.95); color: #fff; }
+        #sidebar nav a.sidebar-link .sidebar-icon { transition: color var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform 150ms ease; color: #94a3b8; }
+        #sidebar nav a.sidebar-link:hover .sidebar-icon, #sidebar nav a.sidebar-link.active .sidebar-icon { color: #fff; transform: translateX(1px); }
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+        }
     </style>
     <script>
         function requireAuth(){ if(!sessionStorage.getItem('analytics_authenticated')){ sessionStorage.setItem('post_login_redirect', location.pathname); location.href='analytics-login.html'; } }
@@ -32,7 +57,7 @@
                 const tr=document.createElement('tr');
                 tr.className='border-b border-gray-700 hover:bg-gray-800';
                 tr.innerHTML=`
-                    <td class="p-3 text-white font-mono">${a.hostname}</td>
+                    <td class="p-3 text-white font-mono"><button class="asset-link text-blue-300 hover:text-blue-200 underline" data-host="${a.hostname}">${a.hostname}</button></td>
                     <td class="p-3 text-gray-300">${a.owner}</td>
                     <td class="p-3 text-gray-300">${a.criticality}</td>
                     <td class="p-3"><span class="px-2 py-1 rounded text-xs font-semibold ${a.risk==='High'?'risk-high':a.risk==='Medium'?'risk-med':'risk-low'}">${a.risk}</span></td>
@@ -41,6 +66,62 @@
                 `;
                 tbody.appendChild(tr);
             })
+            // Details panel interaction - use document delegation for better reliability
+            document.addEventListener('click',(e)=>{
+                if(!e.target.classList.contains('asset-link')) return;
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('Asset link clicked:', e.target);
+                const host = e.target.getAttribute('data-host');
+                console.log('Hostname:', host);
+                const asset = ASSETS.find(x=>x.hostname===host);
+                if(!asset) {
+                    console.log('Asset not found for hostname:', host);
+                    return;
+                }
+                console.log('Found asset:', asset);
+                const panel = document.getElementById('asset-details');
+                const content = document.getElementById('asset-details-content');
+                console.log('Panel elements:', panel, content);
+                if(panel && content){
+                    content.innerHTML = `
+                        <div class="flex items-center justify-between mb-3">
+                            <div>
+                                <div class="text-lg font-semibold text-white">${asset.hostname}</div>
+                                <div class="text-xs text-gray-400">Last patch: ${new Date(asset.lastPatch).toLocaleString()}</div>
+                            </div>
+                            <span class="px-2 py-1 rounded text-xs font-semibold ${asset.risk==='High'?'risk-high':asset.risk==='Medium'?'risk-med':'risk-low'}">${asset.risk} Risk</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div class="bg-gray-800 rounded p-2">
+                                <div class="text-gray-400">Owner</div>
+                                <div class="text-white">${asset.owner}</div>
+                            </div>
+                            <div class="bg-gray-800 rounded p-2">
+                                <div class="text-gray-400">Criticality</div>
+                                <div class="text-white">${asset.criticality}</div>
+                            </div>
+                            <div class="bg-gray-800 rounded p-2">
+                                <div class="text-gray-400">Recent Alerts</div>
+                                <div class="text-blue-300">${asset.recentAlerts}</div>
+                            </div>
+                            <div class="bg-gray-800 rounded p-2">
+                                <div class="text-gray-400">Hostname</div>
+                                <div class="text-white font-mono">${asset.hostname}</div>
+                            </div>
+                        </div>
+                        <div class="mt-3 flex gap-2">
+                            <a href="cases.html" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">View Related Cases</a>
+                            <a href="playbooks.html" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">Open Playbooks</a>
+                        </div>
+                    `;
+                    panel.classList.remove('hidden');
+                    console.log('Details panel shown');
+                } else {
+                    console.log('Panel or content element not found');
+                }
+            });
             if (window.particlesJS) {
                 particlesJS('particles-js', {
                     particles: { number:{ value:60 }, color:{ value:'#3b82f6' }, shape:{ type:'circle' }, opacity:{ value:0.3, random:true }, size:{ value:2, random:true }, line_linked:{ enable:true, distance:200, color:'#3b82f6', opacity:0.2, width:1 }, move:{ enable:true, speed:1 } },
@@ -52,8 +133,44 @@
     </script>
 </head>
 <body class="p-6">
+    <!-- Sidebar -->
+    <button id="sidebar-mobile-toggle" class="lg:hidden fixed top-3 left-3 z-50 inline-flex items-center justify-center rounded-md p-2 text-slate-200 bg-slate-900/90 border border-slate-800 hover:bg-slate-800 transition" aria-controls="sidebar" aria-expanded="false" aria-label="Open sidebar">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div id="sidebar-overlay" class="hidden lg:hidden fixed inset-0 z-40 bg-black/40"></div>
+    <aside id="sidebar" class="fixed z-50 top-0 left-0 h-screen bg-slate-900 text-slate-200 border-r border-slate-800 transform -translate-x-full lg:translate-x-0" role="dialog" aria-modal="true" aria-label="Sidebar">
+        <div class="flex items-center justify-between px-4 py-4 border-b border-slate-800">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-inner">◆</div>
+                <span class="brand-text text-sm font-semibold truncate hidden sm:block">SmartSOC</span>
+            </div>
+            <button id="sidebar-collapse-toggle" class="hidden lg:inline-flex items-center justify-center rounded-md p-2 text-slate-300 hover:bg-slate-800 transition" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">
+                <i id="sidebar-collapse-icon-top" class="fas fa-angle-left"></i>
+            </button>
+            <button id="sidebar-close" class="lg:hidden inline-flex items-center justify-center rounded-md p-2 text-slate-300 hover:bg-slate-800 transition" aria-label="Close sidebar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <nav class="px-2 py-3 overflow-y-auto h-[calc(100vh-3.25rem)]">
+            <ul class="space-y-1">
+                <li><a href="index.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-gauge-high w-5"></i><span class="truncate text-sm font-medium">Dashboard</span></a></li>
+                <li><a href="threat-detection.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-triangle-exclamation w-5"></i><span class="truncate text-sm font-medium">Threat Detection</span></a></li>
+                <li><a href="cases.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-fire w-5"></i><span class="truncate text-sm font-medium">Incidents</span></a></li>
+                <li><a href="threat-intel.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-brain w-5"></i><span class="truncate text-sm font-medium">Threat Intel</span></a></li>
+                <li><a href="analytics.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-chart-line w-5"></i><span class="truncate text-sm font-medium">Analytics</span></a></li>
+                <li><a href="playbooks.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-diagram-project w-5"></i><span class="truncate text-sm font-medium">Automation Playbooks</span></a></li>
+                <li><a href="assets.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-white bg-slate-800" style="box-shadow: inset 3px 0 0 0 rgb(99 102 241)"><i class="sidebar-icon fas fa-users w-5"></i><span class="truncate text-sm font-medium">Users</span></a></li>
+                <li><a href="settings.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-gear w-5"></i><span class="truncate text-sm font-medium">Settings</span></a></li>
+            </ul>
+        </nav>
+        <div class="hidden lg:flex absolute bottom-0 left-0 right-0 p-2 border-t border-slate-800">
+            <button id="sidebar-collapse-toggle-bottom" class="w-full inline-flex items-center justify-center gap-2 rounded-md px-2 py-2 text-xs text-slate-300 hover:bg-slate-800 transition" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">
+                <i id="sidebar-collapse-icon-bottom" class="fas fa-angle-left"></i>
+            </button>
+        </div>
+    </aside>
     <div id="particles-js" style="position:fixed; inset:0; z-index:-1"></div>
-    <div class="max-w-6xl mx-auto">
+    <div id="main-container" class="max-w-6xl mx-auto">
         <header class="flex justify-between items-center mb-6">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -82,7 +199,103 @@
                 <tbody id="assets-body"></tbody>
             </table>
         </div>
+        <div id="asset-details" class="card p-4 mt-4 hidden">
+            <h3 class="text-lg font-semibold text-white mb-2">Asset Details</h3>
+            <div id="asset-details-content" class="text-sm text-gray-300"></div>
+        </div>
     </div>
+<script>
+    (function(){
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const mobileToggle = document.getElementById('sidebar-mobile-toggle');
+        const closeBtn = document.getElementById('sidebar-close');
+        const collapseTop = document.getElementById('sidebar-collapse-toggle');
+        const collapseBottom = document.getElementById('sidebar-collapse-toggle-bottom');
+        const STORAGE_KEY = 'smartsoc.sidebar.collapsed';
+        let collapsed = false;
+        try { const persisted = localStorage.getItem(STORAGE_KEY); if (persisted !== null) collapsed = persisted === 'true'; } catch(e) {}
+        function applyCollapsedState(){
+            const isDesktop = window.innerWidth >= 1024;
+            if (isDesktop) {
+                document.body.classList.add('desktop-with-sidebar');
+                document.body.classList.toggle('desktop-with-sidebar-collapsed', collapsed);
+                sidebar.classList.toggle('collapsed', collapsed);
+                const topIcon = document.getElementById('sidebar-collapse-icon-top');
+                const botIcon = document.getElementById('sidebar-collapse-icon-bottom');
+                const expanded = !collapsed;
+                collapseTop && collapseTop.setAttribute('aria-expanded', String(expanded));
+                collapseBottom && collapseBottom.setAttribute('aria-expanded', String(expanded));
+                if (topIcon) topIcon.className = expanded ? 'fas fa-angle-left' : 'fas fa-angle-right';
+                if (botIcon) botIcon.className = expanded ? 'fas fa-angle-left' : 'fas fa-angle-right';
+            } else {
+                document.body.classList.remove('desktop-with-sidebar');
+                document.body.classList.remove('desktop-with-sidebar-collapsed');
+                sidebar.classList.remove('collapsed');
+            }
+        }
+        function setCollapsed(next){ collapsed = next; try{localStorage.setItem(STORAGE_KEY, String(collapsed));}catch(e){} applyCollapsedState(); }
+        function openMobile(){ sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); document.body.classList.add('sidebar-modal-open'); mobileToggle && mobileToggle.setAttribute('aria-expanded','true'); closeBtn && closeBtn.focus && closeBtn.focus(); }
+        function closeMobile(){ sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); document.body.classList.remove('sidebar-modal-open'); mobileToggle && mobileToggle.setAttribute('aria-expanded','false'); mobileToggle && mobileToggle.focus && mobileToggle.focus(); }
+        mobileToggle && mobileToggle.addEventListener('click', openMobile);
+        overlay && overlay.addEventListener('click', closeMobile);
+        closeBtn && closeBtn.addEventListener('click', closeMobile);
+        const toggle = ()=> setCollapsed(!collapsed);
+        collapseTop && collapseTop.addEventListener('click', toggle);
+        collapseBottom && collapseBottom.addEventListener('click', toggle);
+        document.addEventListener('keydown', (e)=>{ if((e.key==='Escape'||e.key==='Esc') && window.innerWidth<1024 && !sidebar.classList.contains('-translate-x-full')){ closeMobile(); } });
+        function init(){ if (window.innerWidth >= 1024){ sidebar.classList.remove('-translate-x-full'); overlay.classList.add('hidden'); } else { document.body.classList.remove('desktop-with-sidebar'); document.body.classList.remove('desktop-with-sidebar-collapsed'); sidebar.classList.remove('collapsed'); } applyCollapsedState(); }
+        init();
+        // Active link highlighting
+        (function markActiveLinks(){
+            const links = sidebar.querySelectorAll('nav a');
+            const current = location.pathname.split('/').pop();
+            links.forEach(a => {
+                const href = a.getAttribute('href') || '';
+                const file = href.split('/').pop();
+                const isActive = file === '' ? current === '' : current === file;
+                a.classList.toggle('active', isActive);
+                if (isActive) {
+                    a.style.boxShadow = 'inset 3px 0 0 0 rgb(99 102 241)';
+                    a.classList.add('text-white');
+                    a.classList.add('bg-slate-800');
+                }
+            });
+        })();
+        // Keyboard navigation and collapsed tooltips
+        (function enhanceA11y(){
+            const navLinks = Array.from(sidebar.querySelectorAll('nav a'));
+            sidebar.addEventListener('keydown', (e) => {
+                if (!['ArrowDown','ArrowUp','Home','End'].includes(e.key)) return;
+                const active = document.activeElement;
+                const idx = navLinks.indexOf(active);
+                let nextIdx = idx;
+                if (e.key === 'ArrowDown') nextIdx = Math.min(navLinks.length-1, idx + 1);
+                if (e.key === 'ArrowUp') nextIdx = Math.max(0, idx - 1);
+                if (e.key === 'Home') nextIdx = 0;
+                if (e.key === 'End') nextIdx = navLinks.length - 1;
+                if (nextIdx !== idx && navLinks[nextIdx]) {
+                    e.preventDefault();
+                    navLinks[nextIdx].focus();
+                }
+            });
+            function syncCollapsedTooltips() {
+                const isCollapsed = sidebar.classList.contains('collapsed') && window.innerWidth >= 1024;
+                navLinks.forEach(a => {
+                    const label = (a.textContent || '').trim();
+                    if (isCollapsed) a.setAttribute('title', label);
+                    else a.removeAttribute('title');
+                });
+            }
+            syncCollapsedTooltips();
+            window.addEventListener('resize', syncCollapsedTooltips);
+        })();
+        window.addEventListener('resize', applyCollapsedState);
+    })();
+</script>
+    <script src="assets/particles-init.js"></script>
+    <script src="assets/button-functionality.js"></script>
+    <script src="assets/chatbot.js"></script>
 </body>
 </html>
 

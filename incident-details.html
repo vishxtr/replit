@@ -7,6 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/styles.css">
+    <link rel="stylesheet" href="assets/shared-buttons.css">
+    <link rel="stylesheet" href="assets/chatbot.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -18,6 +21,7 @@
         .pill-medium { background:#9a3412; color:#fdba74 }
         .pill-low { background:#92400e; color:#fde68a }
     </style>
+    <script src="assets/particles-init.js"></script>
     <script>
         function requireAuth() {
             const ok = sessionStorage.getItem('analytics_authenticated');
@@ -27,6 +31,20 @@
             }
         }
         function qs(key){ const v = new URLSearchParams(location.search).get(key); return v && v.trim() ? v.trim() : null; }
+        const API_BASE = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('api_base')) || '';
+
+        async function fetchJson(url, opts = {}, timeoutMs = 8000){
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                const resp = await fetch(url, { ...opts, signal: controller.signal });
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                return await resp.json();
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
         function buildIncidentFromId(idStr){
             let idNum = parseInt(idStr || '1', 10);
             if (Number.isNaN(idNum) || !Number.isFinite(idNum)) {
@@ -68,21 +86,76 @@
             };
         }
         function fmt(ts){ try{ return new Date(ts).toLocaleString(); }catch(e){ return ts; } }
-        document.addEventListener('DOMContentLoaded', () => {
+        function severityToSla(sev){ return sev==='High'?120: sev==='Medium'?240:480; }
+
+        function mapAlertToIncident(alert){
+            const id = alert.id || 0;
+            const sev = alert.severity || 'Low';
+            const type = alert.explanation || 'Security Alert';
+            const description = `${alert.explanation || 'Alert'}${alert.evidence ? ' — Evidence: ' + alert.evidence : ''}`;
+            const remediation = alert.remediation ? [String(alert.remediation)] : ['Investigate alert context', 'Validate scope of impact'];
+            return {
+                id,
+                severity: sev,
+                type,
+                timestamp: new Date().toISOString(),
+                description,
+                entities: alert.entities || {},
+                iocs: alert.iocs || [],
+                ttp: alert.ttp || [],
+                remediation,
+                comments: [],
+                status: 'New',
+                slaMinutes: severityToSla(sev),
+                timeline: [
+                    { t: -15, text: 'Alert ingested by SmartSOC' },
+                    { t: -5, text: 'Initial triage ready' }
+                ]
+            };
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
             requireAuth();
             const container = document.getElementById('container');
             const id = qs('id') || '1';
-            const inc = buildIncidentFromId(id);
+            let inc = null;
+            let dataSource = 'backend';
+            try {
+                const data = await fetchJson(`${API_BASE}/api/alerts/${encodeURIComponent(id)}`);
+                if (data && !data.error) {
+                    inc = mapAlertToIncident(data);
+                }
+            } catch (_) {}
+            if (!inc) {
+                inc = buildIncidentFromId(id);
+                dataSource = 'demo';
+            }
 
-            // Header
-            document.getElementById('header-title').textContent = `Incident #${inc.id}`;
-            document.getElementById('severity-pill').textContent = inc.severity;
-            document.getElementById('severity-pill').classList.add(
-                inc.severity === 'High' ? 'pill-high' : inc.severity === 'Medium' ? 'pill-medium' : 'pill-low'
-            );
-            document.getElementById('type').textContent = inc.type;
-            document.getElementById('timestamp').textContent = fmt(inc.timestamp);
-            document.getElementById('description').textContent = inc.description;
+            // Header (safe updates — some header controls were removed)
+            const headerTitle = document.getElementById('header-title');
+            if (headerTitle) headerTitle.textContent = `Incident #${inc.id}`;
+            const severityPill = document.getElementById('severity-pill');
+            if (severityPill) {
+                severityPill.textContent = inc.severity;
+                severityPill.classList.add(
+                    inc.severity === 'High' ? 'pill-high' : inc.severity === 'Medium' ? 'pill-medium' : 'pill-low'
+                );
+            }
+            const typeEl = document.getElementById('type'); if (typeEl) typeEl.textContent = inc.type;
+            const tsEl = document.getElementById('timestamp'); if (tsEl) tsEl.textContent = fmt(inc.timestamp);
+            const descEl = document.getElementById('description'); if (descEl) descEl.textContent = inc.description;
+            const loadStatus = document.getElementById('load-status');
+            if (headerTitle) {
+                const src = document.createElement('span');
+                src.className = dataSource === 'backend' ? 'ml-2 text-xs px-2 py-0.5 rounded bg-green-700 text-green-100' : 'ml-2 text-xs px-2 py-0.5 rounded bg-yellow-700 text-yellow-100';
+                src.textContent = dataSource === 'backend' ? 'Live' : 'Demo';
+                headerTitle.appendChild(src);
+            }
+            if (loadStatus) {
+                loadStatus.className = 'mb-4 px-3 py-2 rounded ' + (dataSource === 'backend' ? 'bg-green-900/50 text-green-200 border border-green-700/40' : 'bg-yellow-900/40 text-yellow-200 border border-yellow-700/30');
+                loadStatus.textContent = dataSource === 'backend' ? 'Loaded incident from server.' : 'Server unavailable or alert not found; showing demo incident.';
+                loadStatus.classList.remove('hidden');
+            }
 
             // Entities
             const ent = document.getElementById('entities');
@@ -98,12 +171,14 @@
             const statusBadge = document.getElementById('status-badge');
             function setStatus(s){
                 inc.status = s;
-                statusBadge.textContent = s;
-                statusBadge.className = 'px-2 py-1 rounded text-xs font-semibold ' + (s==='New' ? 'bg-blue-700 text-blue-100' : s==='In Progress' ? 'bg-yellow-700 text-yellow-100' : 'bg-green-700 text-green-100');
-                statusSel.value = s;
+                if (statusBadge) {
+                    statusBadge.textContent = s;
+                    statusBadge.className = 'px-2 py-1 rounded text-xs font-semibold ' + (s==='New' ? 'bg-blue-700 text-blue-100' : s==='In Progress' ? 'bg-yellow-700 text-yellow-100' : 'bg-green-700 text-green-100');
+                }
+                if (statusSel) statusSel.value = s;
             }
             setStatus(inc.status);
-            statusSel.addEventListener('change', ()=> setStatus(statusSel.value));
+            if (statusSel) statusSel.addEventListener('change', ()=> setStatus(statusSel.value));
 
             // IOCs
             const iocs = document.getElementById('iocs');
@@ -128,13 +203,33 @@
             inc.remediation.forEach(step=>{
                 const btn = document.createElement('button');
                 btn.className = 'w-full text-left p-2 bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm mb-2';
-                btn.textContent = step;
-                btn.onclick = ()=>{
+                btn.textContent = step.startsWith('Apply ') ? step : `Apply: ${step}`;
+                btn.onclick = async ()=>{
                     const log = document.getElementById('playbook-log');
                     const row = document.createElement('div');
-                    row.className = 'text-xs text-green-400';
-                    row.textContent = `[${new Date().toLocaleTimeString()}] Executed: ${step}`;
+                    row.className = 'text-xs text-blue-300';
+                    row.textContent = `[${new Date().toLocaleTimeString()}] Running: ${step}`;
                     log.prepend(row);
+                    try {
+                        const resp = await fetch(`${API_BASE}/api/remediate/${encodeURIComponent(inc.id)}`, { method:'POST' });
+                        const res = await resp.json().catch(()=>({}));
+                        const ok = resp.ok && res && res.success;
+                        const done = document.createElement('div');
+                        done.className = ok ? 'text-xs text-green-400' : 'text-xs text-red-400';
+                        done.textContent = ok ? `[${new Date().toLocaleTimeString()}] Remediation succeeded: ${res.message || 'OK'}` : `[${new Date().toLocaleTimeString()}] Remediation failed: ${res.message || 'Error'}`;
+                        log.prepend(done);
+                        if (ok) {
+                            inc.status = 'Remediated';
+                            statusSel.value = 'Remediated';
+                            statusBadge.textContent = 'Remediated';
+                            statusBadge.className = 'px-2 py-1 rounded text-xs font-semibold bg-green-700 text-green-100';
+                        }
+                    } catch (e) {
+                        const err = document.createElement('div');
+                        err.className = 'text-xs text-red-400';
+                        err.textContent = `[${new Date().toLocaleTimeString()}] Remediation request error.`;
+                        log.prepend(err);
+                    }
                 };
                 rem.appendChild(btn);
             });
@@ -151,15 +246,17 @@
             // Add comment
             const addCommentBtn = document.getElementById('add-comment-btn');
             const addCommentInput = document.getElementById('add-comment-input');
-            addCommentBtn.addEventListener('click', ()=>{
-                const text = addCommentInput.value.trim();
-                if(!text) return;
-                const row = document.createElement('div');
-                row.className = 'p-2 bg-gray-800 rounded mb-2 text-sm';
-                row.textContent = `you: ${text}`;
-                comments.prepend(row);
-                addCommentInput.value='';
-            });
+            if (addCommentBtn && addCommentInput) {
+                addCommentBtn.addEventListener('click', ()=>{
+                    const text = addCommentInput.value.trim();
+                    if(!text) return;
+                    const row = document.createElement('div');
+                    row.className = 'p-2 bg-gray-800 rounded mb-2 text-sm';
+                    row.textContent = `you: ${text}`;
+                    comments.prepend(row);
+                    addCommentInput.value='';
+                });
+            }
 
             // Timeline
             const timeline = document.getElementById('timeline');
@@ -172,16 +269,9 @@
 
             // SLA donut
             const ctx = document.getElementById('slaChart').getContext('2d');
-            new Chart(ctx, { type:'doughnut', data:{ datasets:[{ data:[45, inc.slaMinutes-45], backgroundColor:['#ef4444','#374151'], borderWidth:0 }] }, options:{ responsive:false, cutout:'75%', plugins:{ legend:{ display:false } } });
+            new Chart(ctx, { type:'doughnut', data:{ datasets:[{ data:[45, inc.slaMinutes-45], backgroundColor:['#ef4444','#374151'], borderWidth:0 }] }, options:{ responsive:false, cutout:'75%', plugins:{ legend:{ display:false } } }});
 
-            // Particles background
-            if (window.particlesJS) {
-                particlesJS('particles-js', {
-                    particles: { number:{ value:60 }, color:{ value:'#3b82f6' }, shape:{ type:'circle' }, opacity:{ value:0.3, random:true }, size:{ value:2, random:true }, line_linked:{ enable:true, distance:200, color:'#3b82f6', opacity:0.2, width:1 }, move:{ enable:true, speed:1 } },
-                    interactivity: { detect_on:'canvas', events:{ onhover:{ enable:true, mode:'repulse' }, onclick:{ enable:true, mode:'push' }, resize:true } },
-                    retina_detect:true
-                });
-            }
+            // Particles background is initialized via assets/particles-init.js (shared)
 
             // Export PDF
             const exportBtn = document.getElementById('export-btn');
@@ -226,11 +316,11 @@
                 </div>
             </div>
             <div class="flex items-center space-x-2">
-                <span id="severity-pill" class="pill"></span>
-                <span id="status-badge" class="px-2 py-1 rounded text-xs font-semibold"></span>
-                <a href="index.html" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded">Back</a>
+                <a id="back-link" href="#" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded" onclick="event.preventDefault(); if (history.length>1) { history.back(); } else { window.location.href='index.html'; }">Back</a>
             </div>
         </header>
+
+        <div id="load-status" class="mb-4 hidden"></div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2 space-y-6">
@@ -313,7 +403,416 @@
             </div>
         </div>
     </div>
+    <script src="assets/button-functionality.js"></script>
+    <script src="assets/chatbot.js"></script>
 </body>
 </html>
+
+
+
+
+                    const log = document.getElementById('playbook-log');
+
+                    const row = document.createElement('div');
+
+                    row.className = 'text-xs text-blue-300';
+
+                    row.textContent = `[${new Date().toLocaleTimeString()}] Running: ${step}`;
+
+                    log.prepend(row);
+
+                    try {
+
+                        const resp = await fetch(`${API_BASE}/api/remediate/${encodeURIComponent(inc.id)}`, { method:'POST' });
+
+                        const res = await resp.json().catch(()=>({}));
+
+                        const ok = resp.ok && res && res.success;
+
+                        const done = document.createElement('div');
+
+                        done.className = ok ? 'text-xs text-green-400' : 'text-xs text-red-400';
+
+                        done.textContent = ok ? `[${new Date().toLocaleTimeString()}] Remediation succeeded: ${res.message || 'OK'}` : `[${new Date().toLocaleTimeString()}] Remediation failed: ${res.message || 'Error'}`;
+
+                        log.prepend(done);
+
+                        if (ok) {
+
+                            inc.status = 'Remediated';
+
+                            statusSel.value = 'Remediated';
+
+                            statusBadge.textContent = 'Remediated';
+
+                            statusBadge.className = 'px-2 py-1 rounded text-xs font-semibold bg-green-700 text-green-100';
+
+                        }
+
+                    } catch (e) {
+
+                        const err = document.createElement('div');
+
+                        err.className = 'text-xs text-red-400';
+
+                        err.textContent = `[${new Date().toLocaleTimeString()}] Remediation request error.`;
+
+                        log.prepend(err);
+
+                    }
+
+                };
+
+                rem.appendChild(btn);
+
+            });
+
+
+
+            // Comments
+
+            const comments = document.getElementById('comments');
+
+            inc.comments.forEach(c=>{
+
+                const row = document.createElement('div');
+
+                row.className = 'p-2 bg-gray-800 rounded mb-2 text-sm';
+
+                row.textContent = `${c.by}: ${c.text}`;
+
+                comments.appendChild(row);
+
+            });
+
+
+
+            // Add comment
+
+            const addCommentBtn = document.getElementById('add-comment-btn');
+
+            const addCommentInput = document.getElementById('add-comment-input');
+
+            if (addCommentBtn && addCommentInput) {
+
+                addCommentBtn.addEventListener('click', ()=>{
+
+                    const text = addCommentInput.value.trim();
+
+                    if(!text) return;
+
+                    const row = document.createElement('div');
+
+                    row.className = 'p-2 bg-gray-800 rounded mb-2 text-sm';
+
+                    row.textContent = `you: ${text}`;
+
+                    comments.prepend(row);
+
+                    addCommentInput.value='';
+
+                });
+
+            }
+
+
+
+            // Timeline
+
+            const timeline = document.getElementById('timeline');
+
+            inc.timeline.forEach(ev=>{
+
+                const item = document.createElement('div');
+
+                item.className = 'relative pl-6 text-sm text-gray-300';
+
+                item.innerHTML = `<span class="absolute left-0 top-1 w-3 h-3 rounded-full bg-blue-500"></span><span class="text-gray-400 mr-2">${Math.abs(ev.t)} min ${ev.t<0?'ago':'from now'}</span>${ev.text}`;
+
+                timeline.appendChild(item);
+
+            });
+
+
+
+            // SLA donut
+
+            const ctx = document.getElementById('slaChart').getContext('2d');
+
+            new Chart(ctx, { type:'doughnut', data:{ datasets:[{ data:[45, inc.slaMinutes-45], backgroundColor:['#ef4444','#374151'], borderWidth:0 }] }, options:{ responsive:false, cutout:'75%', plugins:{ legend:{ display:false } } }});
+
+
+
+            // Particles background is initialized via assets/particles-init.js (shared)
+
+
+
+            // Export PDF
+
+            const exportBtn = document.getElementById('export-btn');
+
+            exportBtn.addEventListener('click', ()=>{
+
+                try {
+
+                    const { jsPDF } = window.jspdf;
+
+                    const doc = new jsPDF();
+
+                    let y = 20;
+
+                    doc.setFontSize(18); doc.text(`Incident #${inc.id}`, 20, y); y+=8;
+
+                    doc.setFontSize(11); doc.text(`Type: ${inc.type}`, 20, y); y+=6;
+
+                    doc.text(`Severity: ${inc.severity}   Status: ${inc.status}`, 20, y); y+=6;
+
+                    doc.text(`Timestamp: ${fmt(inc.timestamp)}`, 20, y); y+=10;
+
+
+
+                    doc.setFontSize(12); doc.text('Entities', 20, y); y+=6; doc.setFontSize(10);
+
+                    Object.entries(inc.entities).forEach(([k,v])=>{ doc.text(`${k}: ${v}`, 22, y); y+=5;}); y+=3;
+
+
+
+                    doc.setFontSize(12); doc.text('IOCs', 20, y); y+=6; doc.setFontSize(10);
+
+                    inc.iocs.forEach(i=>{ doc.text(`- ${i}`, 22, y); y+=5;}); y+=3;
+
+
+
+                    doc.setFontSize(12); doc.text('Remediation', 20, y); y+=6; doc.setFontSize(10);
+
+                    inc.remediation.forEach(r=>{ doc.text(`- ${r}`, 22, y); y+=5;}); y+=3;
+
+
+
+                    doc.save(`Incident_${inc.id}.pdf`);
+
+                } catch(e) {
+
+                    alert('Failed to export PDF.');
+
+                }
+
+            });
+
+        });
+
+    </script>
+
+</head>
+
+<body class="p-6">
+
+    <div id="particles-js" style="position:fixed; inset:0; z-index:-1"></div>
+
+    <div class="max-w-6xl mx-auto">
+
+        <header class="flex justify-between items-center mb-6">
+
+            <div class="flex items-center space-x-3">
+
+                <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+
+                    <i class="fas fa-bolt text-white"></i>
+
+                </div>
+
+                <div>
+
+                    <h1 id="header-title" class="text-2xl font-bold text-white">Incident</h1>
+
+                    <div class="text-sm text-gray-400">Detailed investigation view</div>
+
+                </div>
+
+            </div>
+
+            <div class="flex items-center space-x-2">
+
+                <a id="back-link" href="#" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded" onclick="event.preventDefault(); if (history.length>1) { history.back(); } else { window.location.href='index.html'; }">Back</a>
+
+            </div>
+
+        </header>
+
+
+
+        <div id="load-status" class="mb-4 hidden"></div>
+
+
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <div class="lg:col-span-2 space-y-6">
+
+                <div class="card p-5">
+
+                    <h2 class="text-xl font-semibold text-white mb-2">Overview</h2>
+
+                    <div class="text-sm text-gray-300">Type: <span id="type"></span></div>
+
+                    <div class="text-sm text-gray-300">Timestamp: <span id="timestamp"></span></div>
+
+                    <p id="description" class="mt-3 text-gray-300"></p>
+
+                </div>
+
+
+
+                <div class="card p-5">
+
+                    <h2 class="text-xl font-semibold text-white mb-4">Entities</h2>
+
+                    <div id="entities" class="space-y-2"></div>
+
+                </div>
+
+
+
+                <div class="card p-5">
+
+                    <h2 class="text-xl font-semibold text-white mb-4">Timeline</h2>
+
+                    <div id="timeline" class="space-y-2"></div>
+
+                </div>
+
+
+
+                <div class="card p-5">
+
+                    <h2 class="text-xl font-semibold text-white mb-4">Playbook Execution Log</h2>
+
+                    <div id="playbook-log" class="h-40 overflow-y-auto bg-gray-900 rounded p-3"></div>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="space-y-6">
+
+                <div class="card p-5">
+
+                    <h2 class="text-xl font-semibold text-white mb-4">SLA</h2>
+
+                    <div class="w-32 h-32 mx-auto mb-2 relative">
+
+                        <canvas id="slaChart" width="128" height="128"></canvas>
+
+                    </div>
+
+                    <div class="text-center text-sm text-gray-400">Time remaining simulation</div>
+
+                </div>
+
+
+
+                <div class="card p-5">
+
+                    <h2 class="text-xl font-semibold text-white mb-2">Indicators of Compromise</h2>
+
+                    <ul id="iocs" class="list-disc ml-6"></ul>
+
+                </div>
+
+
+
+                <div class="card p-5">
+
+                    <h2 class="text-xl font-semibold text-white mb-2">MITRE ATT&CK</h2>
+
+                    <ul id="ttps" class="list-disc ml-6"></ul>
+
+                </div>
+
+
+
+                <div class="card p-5">
+
+                    <h2 class="text-xl font-semibold text-white mb-2">Remediation</h2>
+
+                    <div id="remediation"></div>
+
+                </div>
+
+
+
+                <div class="card p-5">
+
+                    <h2 class="text-xl font-semibold text-white mb-2">Comments</h2>
+
+                    <div id="comments"></div>
+
+                    <div class="mt-3 flex space-x-2">
+
+                        <input id="add-comment-input" class="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-white" placeholder="Add a comment..." />
+
+                        <button id="add-comment-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">Add</button>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="card p-5">
+
+                    <h2 class="text-xl font-semibold text-white mb-2">Actions</h2>
+
+                    <div class="space-y-3">
+
+                        <div>
+
+                            <label class="block text-sm text-gray-300 mb-1">Status</label>
+
+                            <select id="status-select" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-white">
+
+                                <option>New</option>
+
+                                <option>In Progress</option>
+
+                                <option>Remediated</option>
+
+                            </select>
+
+                        </div>
+
+                        <button id="export-btn" class="w-full bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded text-sm"><i class="fas fa-file-pdf mr-2"></i>Export PDF</button>
+
+                        <div class="grid grid-cols-2 gap-2">
+
+                            <a href="cases.html" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded text-sm text-center">Cases</a>
+
+                            <a href="threat-intel.html" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded text-sm text-center">Threat Intel</a>
+
+                            <a href="playbooks.html" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded text-sm text-center">Playbooks</a>
+
+                            <a href="assets.html" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded text-sm text-center">Assets</a>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>
+
+
+
+
 
 

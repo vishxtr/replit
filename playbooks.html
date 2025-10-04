@@ -7,12 +7,36 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/styles.css">
+    <link rel="stylesheet" href="assets/shared-buttons.css">
+    <link rel="stylesheet" href="assets/chatbot.css">
     <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%); color: #d1d5db; }
+        :root { --sidebar-width: 16rem; --sidebar-width-collapsed: 4.5rem; --sidebar-transition-duration: 300ms; --sidebar-transition-ease: ease-in-out; }
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%); color: #d1d5db; transition: padding-left var(--sidebar-transition-duration) var(--sidebar-transition-ease); }
         .card { background: rgba(31,41,55,0.8); backdrop-filter: blur(10px); border: 1px solid rgba(55,65,81,0.3); border-radius: 0.75rem; }
         .step { display:flex; align-items:center; gap:8px; }
         .step::before { content:""; width:10px; height:10px; border-radius:9999px; background:#3b82f6 }
+        /* Sidebar state */
+        body.desktop-with-sidebar { padding-left: var(--sidebar-width); }
+        body.desktop-with-sidebar-collapsed { padding-left: var(--sidebar-width-collapsed); }
+        #sidebar { width: var(--sidebar-width); transition: width var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform var(--sidebar-transition-duration) var(--sidebar-transition-ease); }
+        #sidebar.collapsed { width: var(--sidebar-width-collapsed); }
+        #sidebar.collapsed nav a { justify-content: center; gap: 0; }
+        #sidebar.collapsed nav a span.truncate { display: none; }
+        #sidebar.collapsed .brand-text { display: none; }
+        body.sidebar-modal-open { overflow: hidden; }
+        #sidebar nav a.sidebar-link { position: relative; transition: background-color var(--sidebar-transition-duration) var(--sidebar-transition-ease), color var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform 150ms ease; border-radius: 0.5rem; }
+        #sidebar nav a.sidebar-link::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-top-left-radius: 6px; border-bottom-left-radius: 6px; background: linear-gradient(180deg, rgba(99,102,241,0.8), rgba(147,51,234,0.8)); opacity: 0; transform: scaleY(0.4); transition: opacity var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform var(--sidebar-transition-duration) var(--sidebar-transition-ease); }
+        #sidebar nav a.sidebar-link:hover::before, #sidebar nav a.sidebar-link.active::before { opacity: 1; transform: scaleY(1); }
+        #sidebar nav a.sidebar-link:hover { background: rgba(30, 41, 59, 0.8); }
+        #sidebar nav a.sidebar-link.active { background: rgba(30, 41, 59, 0.95); color: #fff; }
+        #sidebar nav a.sidebar-link .sidebar-icon { transition: color var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform 150ms ease; color: #94a3b8; }
+        #sidebar nav a.sidebar-link:hover .sidebar-icon, #sidebar nav a.sidebar-link.active .sidebar-icon { color: #fff; transform: translateX(1px); }
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+        }
     </style>
     <script>
         function requireAuth(){ if(!sessionStorage.getItem('analytics_authenticated')){ sessionStorage.setItem('post_login_redirect', location.pathname); location.href='analytics-login.html'; } }
@@ -23,6 +47,7 @@
         ];
         document.addEventListener('DOMContentLoaded',()=>{
             requireAuth();
+            seedIncidentContext();
             const list=document.getElementById('playbook-list');
             PLAYBOOKS.forEach((p,idx)=>{
                 const card=document.createElement('div');
@@ -52,27 +77,121 @@
                 });
             }
         })
-        function executePlaybook(pb){
+        function qs(key){ try{ return new URLSearchParams(location.search).get(key); }catch(e){ return null; } }
+        function seedIncidentContext(){
             const log=document.getElementById('run-log');
-            const header=document.createElement('div');
-            header.className='text-sm text-blue-300 mt-2';
-            header.textContent=`Running: ${pb.name}`;
-            log.prepend(header);
-            let delay=0;
-            pb.steps.forEach(step=>{
-                setTimeout(()=>{
-                    const row=document.createElement('div');
-                    row.className='text-xs text-green-400';
-                    row.textContent=`[${new Date().toLocaleTimeString()}] ${step} — OK`;
-                    log.prepend(row);
-                }, delay+=600);
-            })
+            const id = qs('id') || sessionStorage.getItem('current_incident_id');
+            if(!id){ return; }
+            try{ sessionStorage.setItem('current_incident_id', id); }catch(e){}
+            const meta = JSON.parse(sessionStorage.getItem('incident_meta_'+id) || '{}');
+            const header=document.createElement('div'); header.className='text-sm text-gray-300 mb-2'; header.textContent = `Incident #${id}${meta.type? ' — '+meta.type:''}${meta.severity? ' — '+meta.severity:''}`; log.appendChild(header);
+            if(meta.description){ const d=document.createElement('div'); d.className='text-xs text-gray-400 mb-2'; d.textContent = meta.description; log.appendChild(d); }
+            const steps = inferRemediationSteps(meta);
+            if(steps.length){
+                const ul=document.createElement('div'); ul.className='mb-2';
+                steps.forEach(s=>{ const li=document.createElement('div'); li.className='text-xs text-blue-300'; li.textContent = `• ${s}`; ul.appendChild(li); });
+                log.appendChild(ul);
+                const runBtn = document.getElementById('run-incident');
+                runBtn.classList.remove('hidden');
+                runBtn.onclick = ()=> executePlaybook({ name:`Incident #${id} Remediation`, steps });
+            }
         }
+        function inferRemediationSteps(meta){
+            const steps=[]; const sev=(meta.severity||'').toLowerCase(); const type=(meta.type||'').toLowerCase();
+            if(type.includes('brute')||type.includes('login')){ steps.push('Block source IP at firewall'); steps.push('Reset affected user password'); steps.push('Enable/verify MFA for user'); }
+            if(type.includes('malware')|| (meta.destination||'').includes('malware')){ steps.push('Isolate host from network'); steps.push('Run antivirus scan'); steps.push('Block malicious domain'); }
+            if(type.includes('exfil')||type.includes('upload')){ steps.push('Quarantine user device'); steps.push('Block destination endpoint'); steps.push('Open incident ticket for data review'); }
+            if(type.includes('insider')||type.includes('privilege')){ steps.push('Temporarily disable user account'); steps.push('Audit recent access and changes'); steps.push('Notify HR and Compliance'); }
+            if(!steps.length){ steps.push('Collect context and artifacts'); steps.push('Contain suspected entities'); steps.push('Restore service and monitor'); }
+            if(sev==='high'){ steps.unshift('Page on-call incident responder'); }
+            return steps;
+        }
+        // Realistic execution runner with progress, cancellation and failures
+        let isRunning=false; let cancelRequested=false;
+        function setRunButtonsDisabled(disabled){
+            document.querySelectorAll('.run-btn').forEach(b=>{ b.disabled=disabled; if(disabled){ b.classList.add('opacity-60','cursor-not-allowed'); } else { b.classList.remove('opacity-60','cursor-not-allowed'); } });
+        }
+        function autoScroll(el){ el.scrollTop = el.scrollHeight; }
+        function appendLogLine(text, cls){ const log=document.getElementById('run-log'); const row=document.createElement('div'); row.className=cls; row.textContent=text; log.appendChild(row); autoScroll(log); persistLog(); }
+        function setStatus(text, cls){ const s=document.getElementById('run-status'); s.className='text-xs mb-2 ' + (cls||'text-gray-400'); s.textContent=text; }
+        function setProgress(pct){ const bar=document.getElementById('run-progress'); bar.style.width = Math.max(0, Math.min(100, pct)) + '%'; }
+        function persistLog(){ try{ localStorage.setItem('smartsoc_playbook_log', document.getElementById('run-log').innerHTML); }catch(e){} }
+        function restoreLog(){ try{ const html = localStorage.getItem('smartsoc_playbook_log'); if(html){ document.getElementById('run-log').innerHTML = html; } }catch(e){} }
+        restoreLog();
+        async function executePlaybook(pb){
+            if(isRunning) return;
+            isRunning=true; cancelRequested=false; setRunButtonsDisabled(true);
+            document.getElementById('cancel-run').classList.remove('hidden');
+            setStatus(`Running: ${pb.name}`, 'text-blue-300'); setProgress(0);
+            appendLogLine(`[${new Date().toLocaleTimeString()}] ▶ Start playbook: ${pb.name}`, 'text-sm text-blue-300');
+            const total = pb.steps.length;
+            for(let i=0;i<total;i++){
+                if(cancelRequested){ appendLogLine(`[${new Date().toLocaleTimeString()}] ■ Canceled at step ${i+1}/${total}`, 'text-xs text-yellow-400'); break; }
+                const step = pb.steps[i];
+                appendLogLine(`[${new Date().toLocaleTimeString()}] … ${step} — START`, 'text-xs text-gray-300');
+                // Simulated latency and outcome
+                await new Promise(r=>setTimeout(r, 500 + Math.random()*900));
+                const fail = Math.random() < 0.08; // ~8% chance
+                if(fail){
+                    appendLogLine(`[${new Date().toLocaleTimeString()}] ✖ ${step} — FAIL`, 'text-xs text-red-400');
+                    setStatus(`Failed on step: ${step}`, 'text-red-400');
+                    break;
+                } else {
+                    appendLogLine(`[${new Date().toLocaleTimeString()}] ✓ ${step} — OK`, 'text-xs text-green-400');
+                }
+                setProgress(Math.round(((i+1)/total)*100));
+            }
+            if(!cancelRequested && document.getElementById('run-status').classList.contains('text-red-400')===false){
+                appendLogLine(`[${new Date().toLocaleTimeString()}] ✔ Playbook completed: ${pb.name}`, 'text-sm text-green-400');
+                setStatus('Completed', 'text-green-400'); setProgress(100);
+            }
+            document.getElementById('cancel-run').classList.add('hidden');
+            isRunning=false; setRunButtonsDisabled(false);
+        }
+        document.getElementById('cancel-run').addEventListener('click',()=>{ cancelRequested=true; setStatus('Canceling…', 'text-yellow-400'); });
+        document.getElementById('clear-log').addEventListener('click',()=>{ const log=document.getElementById('run-log'); log.innerHTML=''; setProgress(0); setStatus(''); persistLog(); });
+        document.getElementById('copy-log').addEventListener('click',async()=>{ try{ const text = Array.from(document.getElementById('run-log').children).map(n=>n.textContent).join('\n'); await navigator.clipboard.writeText(text); }catch(e){} });
     </script>
 </head>
 <body class="p-6">
+    <!-- Sidebar -->
+    <button id="sidebar-mobile-toggle" class="lg:hidden fixed top-3 left-3 z-50 inline-flex items-center justify-center rounded-md p-2 text-slate-200 bg-slate-900/90 border border-slate-800 hover:bg-slate-800 transition" aria-controls="sidebar" aria-expanded="false" aria-label="Open sidebar">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div id="sidebar-overlay" class="hidden lg:hidden fixed inset-0 z-40 bg-black/40"></div>
+    <aside id="sidebar" class="fixed z-50 top-0 left-0 h-screen bg-slate-900 text-slate-200 border-r border-slate-800 transform -translate-x-full lg:translate-x-0" role="dialog" aria-modal="true" aria-label="Sidebar">
+        <div class="flex items-center justify-between px-4 py-4 border-b border-slate-800">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-inner">◆</div>
+                <span class="brand-text text-sm font-semibold truncate hidden sm:block">SmartSOC</span>
+            </div>
+            <button id="sidebar-collapse-toggle" class="hidden lg:inline-flex items-center justify-center rounded-md p-2 text-slate-300 hover:bg-slate-800 transition" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">
+                <i id="sidebar-collapse-icon-top" class="fas fa-angle-left"></i>
+            </button>
+            <button id="sidebar-close" class="lg:hidden inline-flex items-center justify-center rounded-md p-2 text-slate-300 hover:bg-slate-800 transition" aria-label="Close sidebar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <nav class="px-2 py-3 overflow-y-auto h-[calc(100vh-3.25rem)]">
+            <ul class="space-y-1">
+                <li><a href="index.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-gauge-high w-5"></i><span class="truncate text-sm font-medium">Dashboard</span></a></li>
+                <li><a href="threat-detection.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-triangle-exclamation w-5"></i><span class="truncate text-sm font-medium">Threat Detection</span></a></li>
+                <li><a href="cases.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-fire w-5"></i><span class="truncate text-sm font-medium">Incidents</span></a></li>
+                <li><a href="threat-intel.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-brain w-5"></i><span class="truncate text-sm font-medium">Threat Intel</span></a></li>
+                <li><a href="analytics.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-chart-line w-5"></i><span class="truncate text-sm font-medium">Analytics</span></a></li>
+                <li><a href="playbooks.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-white bg-slate-800" style="box-shadow: inset 3px 0 0 0 rgb(99 102 241)"><i class="sidebar-icon fas fa-diagram-project w-5"></i><span class="truncate text-sm font-medium">Automation Playbooks</span></a></li>
+                <li><a href="assets.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-users w-5"></i><span class="truncate text-sm font-medium">Users</span></a></li>
+                <li><a href="settings.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-gear w-5"></i><span class="truncate text-sm font-medium">Settings</span></a></li>
+            </ul>
+        </nav>
+        <div class="hidden lg:flex absolute bottom-0 left-0 right-0 p-2 border-t border-slate-800">
+            <button id="sidebar-collapse-toggle-bottom" class="w-full inline-flex items-center justify-center gap-2 rounded-md px-2 py-2 text-xs text-slate-300 hover:bg-slate-800 transition" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">
+                <i id="sidebar-collapse-icon-bottom" class="fas fa-angle-left"></i>
+            </button>
+        </div>
+    </aside>
     <div id="particles-js" style="position:fixed; inset:0; z-index:-1"></div>
-    <div class="max-w-6xl mx-auto">
+    <div id="main-container" class="max-w-6xl mx-auto">
         <header class="flex justify-between items-center mb-6">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -86,14 +205,172 @@
             <a href="index.html" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded">Back</a>
         </header>
 
+        <!-- Interactive Incident Response Scenarios -->
+        <div class="card p-6 mb-6 bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-500/30">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-gamepad text-blue-400 text-xl"></i>
+                    <div>
+                        <h2 class="text-xl font-semibold text-white">Interactive Incident Response Scenarios</h2>
+                        <p class="text-sm text-gray-400">Practice real-world incident response with guided scenarios</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                    <div class="flex items-center space-x-2 mb-3">
+                        <i class="fas fa-fish text-red-400"></i>
+                        <h3 class="text-white font-medium">Phishing Attack</h3>
+                        <span class="text-xs px-2 py-1 rounded bg-red-900/30 text-red-400">High</span>
+                    </div>
+                    <p class="text-sm text-gray-300 mb-3">Respond to a sophisticated phishing campaign targeting employees</p>
+                    <button class="start-scenario w-full bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm" data-scenario="phishing-attack">
+                        <i class="fas fa-play mr-1"></i>Start Scenario
+                    </button>
+                </div>
+                
+                <div class="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                    <div class="flex items-center space-x-2 mb-3">
+                        <i class="fas fa-lock text-orange-400"></i>
+                        <h3 class="text-white font-medium">Ransomware Outbreak</h3>
+                        <span class="text-xs px-2 py-1 rounded bg-orange-900/30 text-orange-400">Critical</span>
+                    </div>
+                    <p class="text-sm text-gray-300 mb-3">Handle a ransomware attack with rapid spread across systems</p>
+                    <button class="start-scenario w-full bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded text-sm" data-scenario="ransomware-outbreak">
+                        <i class="fas fa-play mr-1"></i>Start Scenario
+                    </button>
+                </div>
+                
+                <div class="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                    <div class="flex items-center space-x-2 mb-3">
+                        <i class="fas fa-user-secret text-yellow-400"></i>
+                        <h3 class="text-white font-medium">Insider Threat</h3>
+                        <span class="text-xs px-2 py-1 rounded bg-yellow-900/30 text-yellow-400">Medium</span>
+                    </div>
+                    <p class="text-sm text-gray-300 mb-3">Investigate suspicious activity from an internal user account</p>
+                    <button class="start-scenario w-full bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded text-sm" data-scenario="insider-threat">
+                        <i class="fas fa-play mr-1"></i>Start Scenario
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2 space-y-4" id="playbook-list"></div>
             <div class="card p-4">
-                <h2 class="text-xl font-semibold text-white mb-3">Execution Log</h2>
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-xl font-semibold text-white">Execution Log</h2>
+                    <div class="flex items-center gap-2">
+                        <button id="copy-log" class="bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded text-xs">Copy</button>
+                        <button id="clear-log" class="bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded text-xs">Clear</button>
+                    </div>
+                </div>
+                <div id="run-status" class="text-xs mb-2 text-gray-400"></div>
+                <div class="w-full h-2 bg-gray-800 rounded overflow-hidden mb-2">
+                    <div id="run-progress" class="h-2 bg-blue-600" style="width:0%"></div>
+                </div>
                 <div id="run-log" class="h-80 overflow-y-auto bg-gray-900 rounded p-3"></div>
+                <div class="mt-2 flex gap-2">
+                    <button id="cancel-run" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm hidden">Cancel</button>
+                    <button id="run-incident" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm hidden">Run Incident Remediation</button>
+                </div>
             </div>
         </div>
     </div>
+<script>
+    (function(){
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const mobileToggle = document.getElementById('sidebar-mobile-toggle');
+        const closeBtn = document.getElementById('sidebar-close');
+        const collapseTop = document.getElementById('sidebar-collapse-toggle');
+        const collapseBottom = document.getElementById('sidebar-collapse-toggle-bottom');
+        const STORAGE_KEY = 'smartsoc.sidebar.collapsed';
+        let collapsed = false;
+        try { const persisted = localStorage.getItem(STORAGE_KEY); if (persisted !== null) collapsed = persisted === 'true'; } catch(e) {}
+        function applyCollapsedState(){
+            const isDesktop = window.innerWidth >= 1024;
+            if (isDesktop) {
+                document.body.classList.add('desktop-with-sidebar');
+                document.body.classList.toggle('desktop-with-sidebar-collapsed', collapsed);
+                sidebar.classList.toggle('collapsed', collapsed);
+                const topIcon = document.getElementById('sidebar-collapse-icon-top');
+                const botIcon = document.getElementById('sidebar-collapse-icon-bottom');
+                const expanded = !collapsed;
+                collapseTop && collapseTop.setAttribute('aria-expanded', String(expanded));
+                collapseBottom && collapseBottom.setAttribute('aria-expanded', String(expanded));
+                if (topIcon) topIcon.className = expanded ? 'fas fa-angle-left' : 'fas fa-angle-right';
+                if (botIcon) botIcon.className = expanded ? 'fas fa-angle-left' : 'fas fa-angle-right';
+            } else {
+                document.body.classList.remove('desktop-with-sidebar');
+                document.body.classList.remove('desktop-with-sidebar-collapsed');
+                sidebar.classList.remove('collapsed');
+            }
+        }
+        function setCollapsed(next){ collapsed = next; try{localStorage.setItem(STORAGE_KEY, String(collapsed));}catch(e){} applyCollapsedState(); }
+        function openMobile(){ sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); document.body.classList.add('sidebar-modal-open'); mobileToggle && mobileToggle.setAttribute('aria-expanded','true'); closeBtn && closeBtn.focus && closeBtn.focus(); }
+        function closeMobile(){ sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); document.body.classList.remove('sidebar-modal-open'); mobileToggle && mobileToggle.setAttribute('aria-expanded','false'); mobileToggle && mobileToggle.focus && mobileToggle.focus(); }
+        mobileToggle && mobileToggle.addEventListener('click', openMobile);
+        overlay && overlay.addEventListener('click', closeMobile);
+        closeBtn && closeBtn.addEventListener('click', closeMobile);
+        const toggle = ()=> setCollapsed(!collapsed);
+        collapseTop && collapseTop.addEventListener('click', toggle);
+        collapseBottom && collapseBottom.addEventListener('click', toggle);
+        document.addEventListener('keydown', (e)=>{ if((e.key==='Escape'||e.key==='Esc') && window.innerWidth<1024 && !sidebar.classList.contains('-translate-x-full')){ closeMobile(); } });
+        function init(){ if (window.innerWidth >= 1024){ sidebar.classList.remove('-translate-x-full'); overlay.classList.add('hidden'); } else { document.body.classList.remove('desktop-with-sidebar'); document.body.classList.remove('desktop-with-sidebar-collapsed'); sidebar.classList.remove('collapsed'); } applyCollapsedState(); }
+        init();
+        // Active link highlighting
+        (function markActiveLinks(){
+            const links = sidebar.querySelectorAll('nav a');
+            const current = location.pathname.split('/').pop();
+            links.forEach(a => {
+                const href = a.getAttribute('href') || '';
+                const file = href.split('/').pop();
+                const isActive = file === '' ? current === '' : current === file;
+                a.classList.toggle('active', isActive);
+                if (isActive) {
+                    a.style.boxShadow = 'inset 3px 0 0 0 rgb(99 102 241)';
+                    a.classList.add('text-white');
+                    a.classList.add('bg-slate-800');
+                }
+            });
+        })();
+        // Keyboard navigation and collapsed tooltips
+        (function enhanceA11y(){
+            const navLinks = Array.from(sidebar.querySelectorAll('nav a'));
+            sidebar.addEventListener('keydown', (e) => {
+                if (!['ArrowDown','ArrowUp','Home','End'].includes(e.key)) return;
+                const active = document.activeElement;
+                const idx = navLinks.indexOf(active);
+                let nextIdx = idx;
+                if (e.key === 'ArrowDown') nextIdx = Math.min(navLinks.length-1, idx + 1);
+                if (e.key === 'ArrowUp') nextIdx = Math.max(0, idx - 1);
+                if (e.key === 'Home') nextIdx = 0;
+                if (e.key === 'End') nextIdx = navLinks.length - 1;
+                if (nextIdx !== idx && navLinks[nextIdx]) {
+                    e.preventDefault();
+                    navLinks[nextIdx].focus();
+                }
+            });
+            function syncCollapsedTooltips() {
+                const isCollapsed = sidebar.classList.contains('collapsed') && window.innerWidth >= 1024;
+                navLinks.forEach(a => {
+                    const label = (a.textContent || '').trim();
+                    if (isCollapsed) a.setAttribute('title', label);
+                    else a.removeAttribute('title');
+                });
+            }
+            syncCollapsedTooltips();
+            window.addEventListener('resize', syncCollapsedTooltips);
+        })();
+        window.addEventListener('resize', applyCollapsedState);
+    })();
+</script>
+    <script src="assets/particles-init.js"></script>
+    <script src="assets/incident-scenarios.js"></script>
+    <script src="assets/button-functionality.js"></script>
+    <script src="assets/chatbot.js"></script>
 </body>
 </html>
 

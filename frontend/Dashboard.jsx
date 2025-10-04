@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AlertsTable from './AlertsTable';
 import AlertModal from './AlertModal';
-import ChatAssistant from './ChatAssistant';
 import PDFGenerator from './PDFGenerator';
 import { toast } from 'react-hot-toast';
 
@@ -11,7 +10,7 @@ const Dashboard = () => {
   const [simulating, setSimulating] = useState(false);
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [severityFilter, setSeverityFilter] = useState('All');
-  const [chatOpen, setChatOpen] = useState(false);
+  
 
   // Fetch alerts
   const fetchAlerts = async () => {
@@ -68,7 +67,7 @@ const Dashboard = () => {
         <button className="btn" onClick={startSimulation} disabled={simulating}>Start Simulation</button>
         <button className="btn" onClick={stopSimulation} disabled={!simulating}>Stop Simulation</button>
         <button className="btn" onClick={fetchAlerts}>Refresh Alerts</button>
-        <button className="btn" onClick={() => setChatOpen(true)}>Ask Assistant</button>
+        
       </div>
       <div className="flex gap-2 mb-4">
         {['All', 'High', 'Medium', 'Low'].map(sev => (
@@ -109,9 +108,7 @@ const Dashboard = () => {
           onClose={() => setSelectedAlert(null)}
         />
       )}
-      {chatOpen && (
-        <ChatAssistant onClose={() => setChatOpen(false)} />
-      )}
+      
     </div>
   );
 };

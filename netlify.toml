@@ -6,6 +6,18 @@ command = ""
 PYTHON_VERSION = "3.11"
 
 [[redirects]]
+from = "/"
+to = "/landing.html"
+status = 200
+
+# Allow direct access to all HTML files
+[[redirects]]
+from = "/*.html"
+to = "/:splat"
+status = 200
+
+# For non-HTML paths, fallback to landing.html
+[[redirects]]
 from = "/*"
-to = "/index.html"
+to = "/landing.html"
 status = 200

@@ -4,31 +4,106 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Intelligence - SmartSOC IRS</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs/%3E%3Crect width='64' height='64' rx='12' fill='%230b1220'/%3E%3Cpath d='M32 8l18 6v12c0 12-8 22-18 26C22 48 14 38 14 26V14l18-6z' fill='%236463f7'/%3E%3Cpath d='M32 14l12 4v8c0 8-5 15-12 18-7-3-12-10-12-18v-8l12-4z' fill='%238b5cf6'/%3E%3C/svg%3E" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/styles.css">
+    <link rel="stylesheet" href="assets/shared-buttons.css">
+    <link rel="stylesheet" href="assets/chatbot.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%); color: #d1d5db; }
+        :root { --sidebar-width: 16rem; --sidebar-width-collapsed: 4.5rem; --sidebar-transition-duration: 300ms; --sidebar-transition-ease: ease-in-out; }
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%); color: #d1d5db; transition: padding-left var(--sidebar-transition-duration) var(--sidebar-transition-ease); }
         .card { background: rgba(31,41,55,0.8); backdrop-filter: blur(10px); border: 1px solid rgba(55,65,81,0.3); border-radius: 0.75rem; }
         .pill { padding: 2px 8px; border-radius: 9999px; font-size: 12px; font-weight: 600; }
         .rep-bad { background:#991b1b; color:#fecaca }
         .rep-susp { background:#9a3412; color:#fdba74 }
         .rep-good { background:#166534; color:#dcfce7 }
+        /* Sidebar state */
+        body.desktop-with-sidebar { padding-left: var(--sidebar-width); }
+        body.desktop-with-sidebar-collapsed { padding-left: var(--sidebar-width-collapsed); }
+        #sidebar { width: var(--sidebar-width); transition: width var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform var(--sidebar-transition-duration) var(--sidebar-transition-ease); }
+        #sidebar.collapsed { width: var(--sidebar-width-collapsed); }
+        #sidebar.collapsed nav a { justify-content: center; gap: 0; }
+        #sidebar.collapsed nav a span.truncate { display: none; }
+        #sidebar.collapsed .brand-text { display: none; }
+        body.sidebar-modal-open { overflow: hidden; }
+        /* Sidebar link styling */
+        #sidebar nav a.sidebar-link { position: relative; transition: background-color var(--sidebar-transition-duration) var(--sidebar-transition-ease), color var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform 150ms ease; border-radius: 0.5rem; }
+        #sidebar nav a.sidebar-link::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-top-left-radius: 6px; border-bottom-left-radius: 6px; background: linear-gradient(180deg, rgba(99,102,241,0.8), rgba(147,51,234,0.8)); opacity: 0; transform: scaleY(0.4); transition: opacity var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform var(--sidebar-transition-duration) var(--sidebar-transition-ease); }
+        #sidebar nav a.sidebar-link:hover::before, #sidebar nav a.sidebar-link.active::before { opacity: 1; transform: scaleY(1); }
+        #sidebar nav a.sidebar-link:hover { background: rgba(30, 41, 59, 0.8); }
+        #sidebar nav a.sidebar-link.active { background: rgba(30, 41, 59, 0.95); color: #fff; }
+        #sidebar nav a.sidebar-link .sidebar-icon { transition: color var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform 150ms ease; color: #94a3b8; }
+        #sidebar nav a.sidebar-link:hover .sidebar-icon, #sidebar nav a.sidebar-link.active .sidebar-icon { color: #fff; transform: translateX(1px); }
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+        }
     </style>
+    <!-- Inline threat intel JSON for offline/file:// usage -->
+    <script id="ti-json" type="application/json">
+    {
+      "threat_intelligence": [
+        {"id":"TI-001","type":"domain","value":"paypal-security.tk","severity":"high","confidence":0.95},
+        {"id":"TI-003","type":"email","value":"noreply@amazon-verify.net","severity":"high","confidence":0.92},
+        {"id":"TI-004","type":"url","value":"https://microsoft-update.ml/verify","severity":"critical","confidence":0.98},
+        {"id":"TI-006","type":"domain","value":"apple-support.org","severity":"medium","confidence":0.75}
+      ]
+    }
+    </script>
     <script>
+        // Ensure page is viewable without prior login; set demo auth flag if missing
+        if (!sessionStorage.getItem('analytics_authenticated')) {
+            try { sessionStorage.setItem('analytics_authenticated', 'true'); } catch(e) {}
+        }
         function requireAuth(){ if(!sessionStorage.getItem('analytics_authenticated')){ sessionStorage.setItem('post_login_redirect', location.pathname); location.href='analytics-login.html'; } }
-        const FEED = [
+        async function loadThreatFeed(){
+            try {
+                // Try inline JSON first (works on file://)
+                const inline = document.getElementById('ti-json');
+                if (inline && inline.textContent) {
+                    const json = JSON.parse(inline.textContent);
+                    const items = (json.threat_intelligence||[]).map(i=>({
+                        type: (i.type||'').toUpperCase(),
+                        value: i.value||'-',
+                        reputation: (i.severity||'unknown').replace(/^(.)/, c=>c.toUpperCase()),
+                        sightings: Math.round((i.confidence||0)*100),
+                        ttps: [],
+                        related: [],
+                    }));
+                    if (items.length) return items;
+                }
+                const res = await fetch('phishing_module/data/mock_threat_feed.json', { cache: 'no-store' });
+                if(!res.ok) throw new Error('fetch failed');
+                const json = await res.json();
+                const items = (json.threat_intelligence||[]).map(i=>({
+                    type: (i.type||'').toUpperCase(),
+                    value: i.value||'-',
+                    reputation: (i.severity||'unknown').replace(/^(.)/, c=>c.toUpperCase()),
+                    sightings: Math.round((i.confidence||0)*100),
+                    ttps: [],
+                    related: [],
+                }));
+                return items;
+            } catch (e) {
+                // Fallback demo data when running from file:// or offline
+                return [
             { type:'IP', value:'81.2.69.142', reputation:'Bad', sightings:42, ttps:['T1110'], related:['malware-distro.ru'] },
-            { type:'Domain', value:'phishing-paradise.com', reputation:'Bad', sightings:18, ttps:['T1566'], related:['81.2.69.142'] },
-            { type:'Hash', value:'e3b0c44298fc1c149afbf4c8996fb924', reputation:'Suspicious', sightings:5, ttps:['T1204'], related:[] },
+                    { type:'DOMAIN', value:'phishing-paradise.com', reputation:'Bad', sightings:18, ttps:['T1566'], related:['81.2.69.142'] },
+                    { type:'HASH', value:'e3b0c44298fc1c149afbf4c8996fb924', reputation:'Suspicious', sightings:5, ttps:['T1204'], related:[] },
             { type:'IP', value:'203.0.113.45', reputation:'Good', sightings:0, ttps:[], related:[] },
         ];
-        document.addEventListener('DOMContentLoaded',()=>{
+            }
+        }
+        document.addEventListener('DOMContentLoaded', async ()=>{
             requireAuth();
+            const FEED = await loadThreatFeed();
             const tbody=document.getElementById('feed-body');
-            FEED.forEach(i=>{
+            tbody.innerHTML = '';
+            FEED.forEach((i, index)=>{
                 const tr=document.createElement('tr');
                 tr.className='border-b border-gray-700 hover:bg-gray-800';
                 tr.innerHTML=`
@@ -36,17 +111,42 @@
                     <td class="p-3 text-white font-mono">${i.value}</td>
                     <td class="p-3">${badge(i.reputation)}</td>
                     <td class="p-3 text-gray-300">${i.sightings}</td>
-                    <td class="p-3 text-gray-300">${i.ttps.join(', ')||'-'}</td>
-                    <td class="p-3 text-blue-300">${i.related.join(', ')||'-'}</td>
+                    <td class="p-3 text-gray-300">${(i.ttps||[]).join(', ')||'-'}</td>
+                    <td class="p-3 text-blue-300">${(i.related||[]).join(', ')||'-'}</td>
+                    <td class="p-3">
+                        <div class="flex space-x-1">
+                            <button data-action="view-details" data-indicator-id="indicator-${index}" class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button data-action="block" data-indicator="${i.value}" class="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition">
+                                <i class="fas fa-ban"></i>
+                            </button>
+                            <button data-action="investigate" data-indicator="${i.value}" class="px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 transition">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </td>
                 `;
                 tbody.appendChild(tr);
             })
 
-            const ctx=document.getElementById('sightingsChart').getContext('2d');
-            new Chart(ctx,{ type:'bar', data:{
-                labels: FEED.map(i=>i.value.slice(0,12)+'…'),
-                datasets:[{ label:'Sightings', data:FEED.map(i=>i.sightings), backgroundColor:'#3b82f6' }]
-            }, options:{ plugins:{ legend:{ labels:{ color:'#d1d5db' } } }, scales:{ x:{ ticks:{ color:'#9ca3af' } }, y:{ ticks:{ color:'#9ca3af' } } } });
+            const canvas = document.getElementById('sightingsChart');
+            if (canvas && window.Chart) {
+                const ctx = canvas.getContext('2d');
+                const labels = FEED.map(function(i){ return (i.value || '').slice(0,12) + '...'; });
+                const dataVals = FEED.map(function(i){ return i.sightings; });
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{ label: 'Confidence (%)', data: dataVals, backgroundColor: '#3b82f6' }]
+                    },
+                    options: {
+                        plugins: { legend: { labels: { color: '#d1d5db' } } },
+                        scales: { x: { ticks: { color: '#9ca3af' } }, y: { ticks: { color: '#9ca3af' } } }
+                    }
+                });
+            }
 
             if (window.particlesJS) {
                 particlesJS('particles-js', {
@@ -61,10 +161,50 @@
             return `<span class="pill ${cls}">${rep}</span>`;
         }
     </script>
+    <script src="assets/particles-init.js"></script>
+    <script src="assets/button-functionality.js"></script>
+    <script src="assets/chatbot.js"></script>
 </head>
 <body class="p-6">
+	<!-- Sidebar: SmartSOC -->
+	<button id="sidebar-mobile-toggle" class="lg:hidden fixed top-3 left-3 z-50 inline-flex items-center justify-center rounded-md p-2 text-slate-200 bg-slate-900/90 border border-slate-800 hover:bg-slate-800 transition" aria-controls="sidebar" aria-expanded="false" aria-label="Open sidebar">
+		<i class="fas fa-bars"></i>
+	</button>
+	<div id="sidebar-overlay" class="hidden lg:hidden fixed inset-0 z-40 bg-black/40"></div>
+	<aside id="sidebar" class="fixed z-50 top-0 left-0 h-screen bg-slate-900 text-slate-200 border-r border-slate-800 transform -translate-x-full lg:translate-x-0" role="dialog" aria-modal="true" aria-label="Sidebar">
+		<div class="flex items-center justify-between px-4 py-4 border-b border-slate-800">
+			<div class="flex items-center gap-3 min-w-0">
+				<div class="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-inner">◆</div>
+				<span class="brand-text text-sm font-semibold truncate hidden sm:block">SmartSOC</span>
+			</div>
+			<button id="sidebar-collapse-toggle" class="hidden lg:inline-flex items-center justify-center rounded-md p-2 text-slate-300 hover:bg-slate-800 transition" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">
+				<i id="sidebar-collapse-icon-top" class="fas fa-angle-left"></i>
+			</button>
+			<button id="sidebar-close" class="lg:hidden inline-flex items-center justify-center rounded-md p-2 text-slate-300 hover:bg-slate-800 transition" aria-label="Close sidebar">
+				<i class="fas fa-times"></i>
+			</button>
+		</div>
+		<nav class="px-2 py-3 overflow-y-auto h-[calc(100vh-3.25rem)]">
+			<ul class="space-y-1">
+				<li><a href="index.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 transition-colors"><i class="sidebar-icon fas fa-gauge-high w-5"></i><span class="truncate text-sm font-medium">Dashboard</span></a></li>
+				<li><a href="threat-detection.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 transition-colors"><i class="sidebar-icon fas fa-triangle-exclamation w-5"></i><span class="truncate text-sm font-medium">Threat Detection</span></a></li>
+				<li><a href="cases.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 transition-colors"><i class="sidebar-icon fas fa-fire w-5"></i><span class="truncate text-sm font-medium">Incidents</span></a></li>
+				<li><a href="threat-intel.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-white bg-slate-800 transition-colors" style="box-shadow: inset 3px 0 0 0 rgb(99 102 241)"><i class="sidebar-icon fas fa-brain w-5"></i><span class="truncate text-sm font-medium">Threat Intelligence</span></a></li>
+				<li><a href="analytics.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 transition-colors"><i class="sidebar-icon fas fa-chart-line w-5"></i><span class="truncate text-sm font-medium">Analytics</span></a></li>
+				<li><a href="playbooks.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 transition-colors"><i class="sidebar-icon fas fa-diagram-project w-5"></i><span class="truncate text-sm font-medium">Automation Playbooks</span></a></li>
+				<li><a href="assets.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 transition-colors"><i class="sidebar-icon fas fa-users w-5"></i><span class="truncate text-sm font-medium">Users</span></a></li>
+				<li><a href="settings.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 transition-colors"><i class="sidebar-icon fas fa-gear w-5"></i><span class="truncate text-sm font-medium">Settings</span></a></li>
+			</ul>
+		</nav>
+		<div class="hidden lg:flex absolute bottom-0 left-0 right-0 p-2 border-t border-slate-800">
+			<button id="sidebar-collapse-toggle-bottom" class="w-full inline-flex items-center justify-center gap-2 rounded-md px-2 py-2 text-xs text-slate-300 hover:bg-slate-800 transition" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">
+				<i id="sidebar-collapse-icon-bottom" class="fas fa-angle-left"></i>
+			</button>
+		</div>
+	</aside>
+
     <div id="particles-js" style="position:fixed; inset:0; z-index:-1"></div>
-    <div class="max-w-6xl mx-auto">
+    <div id="main-container" class="max-w-6xl mx-auto">
         <header class="flex justify-between items-center mb-6">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -78,34 +218,652 @@
             <a href="index.html" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded">Back</a>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Threat Statistics Row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="card p-4 text-center">
+                <div class="text-3xl font-bold text-red-400 mb-2">3</div>
+                <div class="text-sm text-gray-400">Active Threats</div>
+            </div>
+            <div class="card p-4 text-center">
+                <div class="text-3xl font-bold text-green-400 mb-2">5</div>
+                <div class="text-sm text-gray-400">Blocked</div>
+            </div>
+            <div class="card p-4 text-center">
+                <div class="text-3xl font-bold text-yellow-400 mb-2">9</div>
+                <div class="text-sm text-gray-400">Incidents</div>
+            </div>
+            <div class="card p-4 text-center">
+                <div class="text-3xl font-bold text-blue-400 mb-2">2s</div>
+                <div class="text-sm text-gray-400">Response Time</div>
+            </div>
+        </div>
+
+        <!-- Performance Metrics Row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="card p-4 text-center">
+                <div class="text-2xl font-bold text-green-400 mb-2">126ms</div>
+                <div class="text-sm text-gray-400">Avg Response Time</div>
+            </div>
+            <div class="card p-4 text-center">
+                <div class="text-2xl font-bold text-blue-400 mb-2">814</div>
+                <div class="text-sm text-gray-400">Requests/sec</div>
+            </div>
+            <div class="card p-4 text-center">
+                <div class="text-2xl font-bold text-red-400 mb-2">0.43%</div>
+                <div class="text-sm text-gray-400">Error Rate</div>
+            </div>
+            <div class="card p-4 text-center">
+                <div class="text-2xl font-bold text-green-400 mb-2">99.91%</div>
+                <div class="text-sm text-gray-400">Uptime</div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <!-- Active Incidents Section -->
             <div class="lg:col-span-2 card p-5">
-                <h2 class="text-xl font-semibold text-white mb-4">Intel Feed</h2>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-white">Active Incidents <span id="incident-count" class="text-sm text-gray-400">(9)</span></h2>
+                    <div class="flex space-x-2">
+                        <button data-filter="high" class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition">High</button>
+                        <button data-filter="medium" class="px-3 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 transition">Medium</button>
+                        <button data-filter="low" class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition">Low</button>
+                        <button data-filter="all" class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition">All</button>
+                    </div>
+                </div>
+                <div class="space-y-3 max-h-96 overflow-y-auto">
+                    <!-- Incident Items -->
+                    <div class="incident-item border border-red-500 bg-red-900/20 p-3 rounded" data-severity="high">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2 mb-1">
+                                    <span class="text-red-400 font-semibold">Brute Force Attack - Cloud Instance-08</span>
+                                    <span class="px-2 py-1 bg-red-600 text-white text-xs rounded">High</span>
+                                </div>
+                                <div class="text-sm text-gray-300 mb-1">5:01:48 am</div>
+                                <div class="text-sm text-gray-400">Multiple failed login attempts detected from APT-29 (Cozy Bear) targeting Cloud Instance-08</div>
+                                <div class="text-xs text-gray-500 mt-1">Assigned to: Security Team</div>
+                            </div>
+                            <div class="flex space-x-1">
+                                <button data-action="view-details" data-incident-id="incident-1" class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition">View</button>
+                                <button data-action="assign" data-incident-id="incident-1" class="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition">Assign</button>
+                                <button data-action="resolve" data-incident-id="incident-1" class="px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 transition">Resolve</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="incident-item border border-red-500 bg-red-900/20 p-3 rounded" data-severity="high">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2 mb-1">
+                                    <span class="text-red-400 font-semibold">Brute Force Attack - Web Server-01</span>
+                                    <span class="px-2 py-1 bg-red-600 text-white text-xs rounded">High</span>
+                                </div>
+                                <div class="text-sm text-gray-300 mb-1">5:01:43 am</div>
+                                <div class="text-sm text-gray-400">Multiple failed login attempts detected from Lazarus Group targeting Web Server-01</div>
+                                <div class="text-xs text-gray-500 mt-1">Assigned to: Security Team</div>
+                            </div>
+                            <div class="flex space-x-1">
+                                <button data-action="view-details" data-incident-id="incident-2" class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition">View</button>
+                                <button data-action="assign" data-incident-id="incident-2" class="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition">Assign</button>
+                                <button data-action="resolve" data-incident-id="incident-2" class="px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 transition">Resolve</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="incident-item border border-orange-500 bg-orange-900/20 p-3 rounded" data-severity="medium">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2 mb-1">
+                                    <span class="text-orange-400 font-semibold">Suspicious Activity - Database-03</span>
+                                    <span class="px-2 py-1 bg-orange-600 text-white text-xs rounded">Medium</span>
+                                </div>
+                                <div class="text-sm text-gray-300 mb-1">5:01:40 am</div>
+                                <div class="text-sm text-gray-400">Unusual database access patterns detected</div>
+                                <div class="text-xs text-gray-500 mt-1">Assigned to: Security Team</div>
+                            </div>
+                            <div class="flex space-x-1">
+                                <button data-action="view-details" data-incident-id="incident-3" class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition">View</button>
+                                <button data-action="assign" data-incident-id="incident-3" class="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition">Assign</button>
+                                <button data-action="resolve" data-incident-id="incident-3" class="px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 transition">Resolve</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="incident-item border border-green-500 bg-green-900/20 p-3 rounded" data-severity="low">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2 mb-1">
+                                    <span class="text-green-400 font-semibold">Policy Violation - User-15</span>
+                                    <span class="px-2 py-1 bg-green-600 text-white text-xs rounded">Low</span>
+                                </div>
+                                <div class="text-sm text-gray-300 mb-1">5:01:35 am</div>
+                                <div class="text-sm text-gray-400">User accessed restricted resource during off-hours</div>
+                                <div class="text-xs text-gray-500 mt-1">Assigned to: Security Team</div>
+                            </div>
+                            <div class="flex space-x-1">
+                                <button data-action="view-details" data-incident-id="incident-4" class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition">View</button>
+                                <button data-action="assign" data-incident-id="incident-4" class="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition">Assign</button>
+                                <button data-action="resolve" data-incident-id="incident-4" class="px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 transition">Resolve</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Incident Details Section -->
+            <div class="card p-5">
+                <h2 class="text-xl font-semibold text-white mb-4">Incident Details</h2>
+                <div id="incident-details" class="text-gray-400 text-center py-8">
+                    Select an incident from the list to view details.
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Event Stream Row -->
+        <div class="card p-5 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-white">Live Event Stream</h2>
+                <div class="flex items-center space-x-2">
+                    <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span class="text-green-400 text-sm font-medium">Live</span>
+                    <button data-refresh class="ml-4 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            <div class="bg-gray-900 rounded p-4 max-h-64 overflow-y-auto font-mono text-sm">
+                <div class="text-green-400">23:31:50.811 | 192.168.1.10 -> admin_login | User: alice</div>
+                <div class="text-red-400">23:31:49.625 | 81.2.69.142 -> login_failure | User: dave</div>
+                <div class="text-red-400">23:31:49.425 | 81.2.69.142 -> login_failure | User: dave</div>
+                <div class="text-red-400">23:31:49.229 | 81.2.69.142 -> login_failure | User: dave</div>
+                <div class="text-red-400">23:31:49.028 | 81.2.69.142 -> login_failure | User: dave</div>
+                <div class="text-red-400">23:31:48.828 | 81.2.69.142 -> login_failure | User: dave</div>
+                <div class="text-red-400">23:31:46.822 | 198.51.100.2 -> login_failure | User: charlie</div>
+                <div class="text-blue-400">23:31:44.808 | 192.168.1.10 -> dns_query | User: alice</div>
+                <div class="text-green-400">23:31:42.851 | 172.16.31.88 -> admin_login | User: dave</div>
+                <div class="text-yellow-400">23:31:40.816 | 203.0.113.45 -> file_upload | User: alice</div>
+                <div class="text-green-400">23:31:38.811 | 192.168.1.10 -> admin_login | User: dave</div>
+                <div class="text-orange-400">23:31:36.812 | 203.0.113.45 -> firewall_change | User: charlie</div>
+                <div class="text-red-400">23:31:34.816 | 10.1.1.25 -> delete_database | User: dave</div>
+                <div class="text-red-400">23:31:32.809 | 172.16.31.88 -> login_failure | User: bob</div>
+                <div class="text-green-400">23:31:30.811 | 198.51.100.2 -> login_success | User: dave</div>
+                <div class="text-red-400">23:31:28.817 | 198.51.100.2 -> delete_database | User: bob</div>
+                <div class="text-yellow-400">23:31:26.812 | 10.0.0.5 -> file_upload | User: alice</div>
+                <div class="text-blue-400">23:31:24.814 | 203.0.113.45 -> file_access | User: dave</div>
+                <div class="text-red-400">23:31:22.810 | 172.16.31.88 -> login_failure | User: bob</div>
+                <div class="text-orange-400">23:31:20.814 | 198.51.100.2 -> firewall_change | User: bob</div>
+                <div class="text-blue-400">23:31:19.832 | 10.0.0.5 -> file_access | User: alice</div>
+            </div>
+        </div>
+
+        <!-- Threat Intelligence Dashboard - Horizontal Layout -->
+        <div class="horizontal-dashboard" style="display: flex; flex-direction: row; gap: 20px; padding: 20px; width: 100%;">
+            <!-- Intel Feed -->
+            <div class="dashboard-panel" style="flex: 1; min-width: 0;">
+                <div class="card p-6" style="height: 100%;">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-white">Threat Intelligence Feed</h2>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                            <span class="text-blue-400 text-sm">Live</span>
+                            <button data-refresh class="ml-2 px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left">
                         <thead class="bg-gray-700">
                             <tr>
-                                <th class="p-3">Type</th>
-                                <th class="p-3">Indicator</th>
-                                <th class="p-3">Reputation</th>
-                                <th class="p-3">Sightings</th>
-                                <th class="p-3">TTPs</th>
-                                <th class="p-3">Related</th>
+                                    <th class="p-3 text-gray-300">Type</th>
+                                    <th class="p-3 text-gray-300">Indicator</th>
+                                    <th class="p-3 text-gray-300">Reputation</th>
+                                    <th class="p-3 text-gray-300">Sightings</th>
+                                    <th class="p-3 text-gray-300">TTPs</th>
+                                    <th class="p-3 text-gray-300">Related</th>
+                                    <th class="p-3 text-gray-300">Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="feed-body"></tbody>
+                            <tbody id="feed-body" class="divide-y divide-gray-700"></tbody>
                     </table>
+                    </div>
                 </div>
             </div>
 
-            <div class="card p-5">
-                <h2 class="text-xl font-semibold text-white mb-4">Sightings Overview</h2>
-                <div class="h-64 bg-gray-900 rounded p-3">
+            <!-- Threat Analysis -->
+            <div class="dashboard-panel" style="flex: 1; min-width: 0;">
+                <div class="card p-6" style="height: 100%;">
+                    <h2 class="text-xl font-semibold text-white mb-4">Threat Analysis</h2>
+                    <div class="space-y-4">
+                        <!-- Sightings Chart -->
+                        <div class="bg-gray-900 rounded-lg p-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-lg font-medium text-white">Sightings Overview</h3>
+                                <div class="flex space-x-1">
+                                    <button data-chart-action="refresh" class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                    <button data-chart-action="export" class="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                    <button data-chart-action="fullscreen" class="px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 transition">
+                                        <i class="fas fa-expand"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="h-48">
                     <canvas id="sightingsChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- Threat Distribution -->
+                        <div class="bg-gray-900 rounded-lg p-4">
+                            <h3 class="text-lg font-medium text-white mb-3">Threat Distribution</h3>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-300">Malware</span>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-24 bg-gray-700 rounded-full h-2">
+                                            <div class="bg-red-500 h-2 rounded-full" style="width: 45%"></div>
+                                        </div>
+                                        <span class="text-sm text-white">45%</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-300">Phishing</span>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-24 bg-gray-700 rounded-full h-2">
+                                            <div class="bg-orange-500 h-2 rounded-full" style="width: 30%"></div>
+                                        </div>
+                                        <span class="text-sm text-white">30%</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-300">DDoS</span>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-24 bg-gray-700 rounded-full h-2">
+                                            <div class="bg-yellow-500 h-2 rounded-full" style="width: 15%"></div>
+                                        </div>
+                                        <span class="text-sm text-white">15%</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-300">Insider Threat</span>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-24 bg-gray-700 rounded-full h-2">
+                                            <div class="bg-purple-500 h-2 rounded-full" style="width: 10%"></div>
+                                        </div>
+                                        <span class="text-sm text-white">10%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts and Additional Info -->
+            <div class="dashboard-panel" style="flex: 1; min-width: 0;">
+                <div class="card p-6" style="height: 100%;">
+                    <h2 class="text-xl font-semibold text-white mb-4">Threat Sources & IOCs</h2>
+                    <div class="space-y-4">
+                        <!-- Threat Sources -->
+                        <div class="bg-gray-900 rounded-lg p-4">
+                            <h3 class="text-lg font-medium text-white mb-3">Active Threat Sources</h3>
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between p-2 bg-red-900/20 border border-red-500 rounded">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                                        <span class="text-sm text-white">APT-29 (Cozy Bear)</span>
+                                    </div>
+                                    <div class="flex space-x-1">
+                                        <button data-action="view-details" data-incident-id="apt-29" class="px-1 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button data-action="block" data-source="apt-29" class="px-1 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between p-2 bg-orange-900/20 border border-orange-500 rounded">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-2 h-2 bg-orange-500 rounded-full"></div>
+                                        <span class="text-sm text-white">Lazarus Group</span>
+                                    </div>
+                                    <div class="flex space-x-1">
+                                        <button data-action="view-details" data-incident-id="lazarus" class="px-1 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button data-action="block" data-source="lazarus" class="px-1 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between p-2 bg-yellow-900/20 border border-yellow-500 rounded">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                        <span class="text-sm text-white">Emotet</span>
+                                    </div>
+                                    <div class="flex space-x-1">
+                                        <button data-action="view-details" data-incident-id="emotet" class="px-1 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button data-action="block" data-source="emotet" class="px-1 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between p-2 bg-purple-900/20 border border-purple-500 rounded">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-2 h-2 bg-purple-500 rounded-full"></div>
+                                        <span class="text-sm text-white">REvil</span>
+                                    </div>
+                                    <div class="flex space-x-1">
+                                        <button data-action="view-details" data-incident-id="revil" class="px-1 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button data-action="block" data-source="revil" class="px-1 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- IOC Summary -->
+                        <div class="bg-gray-900 rounded-lg p-4">
+                            <h3 class="text-lg font-medium text-white mb-3">IOC Summary</h3>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="text-center p-2 bg-gray-800 rounded">
+                                    <div class="text-lg font-bold text-red-400">12</div>
+                                    <div class="text-xs text-gray-400">Malicious IPs</div>
+                                </div>
+                                <div class="text-center p-2 bg-gray-800 rounded">
+                                    <div class="text-lg font-bold text-orange-400">8</div>
+                                    <div class="text-xs text-gray-400">Suspicious Domains</div>
+                                </div>
+                                <div class="text-center p-2 bg-gray-800 rounded">
+                                    <div class="text-lg font-bold text-yellow-400">15</div>
+                                    <div class="text-xs text-gray-400">File Hashes</div>
+                                </div>
+                                <div class="text-center p-2 bg-gray-800 rounded">
+                                    <div class="text-lg font-bold text-blue-400">6</div>
+                                    <div class="text-xs text-gray-400">Email Addresses</div>
+                                </div>
+                            </div>
+                            <div class="mt-3 flex space-x-2">
+                                <button data-export="csv" class="flex-1 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition">
+                                    <i class="fas fa-download"></i> Export CSV
+                                </button>
+                                <button data-export="json" class="flex-1 px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition">
+                                    <i class="fas fa-download"></i> Export JSON
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- TTPs -->
+                        <div class="bg-gray-900 rounded-lg p-4">
+                            <h3 class="text-lg font-medium text-white mb-3">Active TTPs</h3>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center p-2 bg-gray-800 rounded">
+                                    <span class="text-sm text-white">T1110 - Brute Force</span>
+                                    <div class="flex space-x-1">
+                                        <span class="px-2 py-1 bg-red-600 text-white text-xs rounded">Active</span>
+                                        <button data-action="mitigate" data-ttp="T1110" class="px-1 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 transition">
+                                            <i class="fas fa-shield-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center p-2 bg-gray-800 rounded">
+                                    <span class="text-sm text-white">T1566 - Phishing</span>
+                                    <div class="flex space-x-1">
+                                        <span class="px-2 py-1 bg-orange-600 text-white text-xs rounded">Detected</span>
+                                        <button data-action="mitigate" data-ttp="T1566" class="px-1 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 transition">
+                                            <i class="fas fa-shield-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center p-2 bg-gray-800 rounded">
+                                    <span class="text-sm text-white">T1204 - Malware</span>
+                                    <div class="flex space-x-1">
+                                        <span class="px-2 py-1 bg-yellow-600 text-white text-xs rounded">Monitored</span>
+                                        <button data-action="mitigate" data-ttp="T1204" class="px-1 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 transition">
+                                            <i class="fas fa-shield-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center p-2 bg-gray-800 rounded">
+                                    <span class="text-sm text-white">T1499 - DDoS</span>
+                                    <div class="flex space-x-1">
+                                        <span class="px-2 py-1 bg-red-600 text-white text-xs rounded">Active</span>
+                                        <button data-action="mitigate" data-ttp="T1499" class="px-1 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 transition">
+                                            <i class="fas fa-shield-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- Additional Horizontal Row -->
+        <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Geographic Threat Map -->
+            <div class="card p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-white">Geographic Threat Map</h2>
+                    <div class="flex space-x-2">
+                        <button data-refresh class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button data-export="png" class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+                <div class="bg-gray-900 rounded-lg p-4 h-64 flex items-center justify-center">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mb-4 mx-auto">
+                            <i class="fas fa-globe text-white text-2xl"></i>
+                        </div>
+                        <div class="text-gray-400">Interactive Threat Map</div>
+                        <div class="text-sm text-gray-500 mt-2">Real-time global threat visualization</div>
+                    </div>
+                </div>
+                <div class="mt-4 grid grid-cols-2 gap-4">
+                    <div class="text-center p-3 bg-gray-800 rounded">
+                        <div class="text-lg font-bold text-red-400">Russia</div>
+                        <div class="text-xs text-gray-400">High Activity</div>
+                    </div>
+                    <div class="text-center p-3 bg-gray-800 rounded">
+                        <div class="text-lg font-bold text-orange-400">China</div>
+                        <div class="text-xs text-gray-400">Medium Activity</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network Analysis -->
+            <div class="card p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-white">Network Analysis</h2>
+                    <div class="flex space-x-2">
+                        <button data-refresh class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button data-status-toggle data-current-status="active" class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition">
+                            Deactivate
+                        </button>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div class="bg-gray-900 rounded-lg p-4">
+                        <h3 class="text-lg font-medium text-white mb-3">Traffic Patterns</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-300">Inbound Traffic</span>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-20 bg-gray-700 rounded-full h-2">
+                                        <div class="bg-blue-500 h-2 rounded-full" style="width: 75%"></div>
+                                    </div>
+                                    <span class="text-sm text-white">75%</span>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-300">Outbound Traffic</span>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-20 bg-gray-700 rounded-full h-2">
+                                        <div class="bg-green-500 h-2 rounded-full" style="width: 25%"></div>
+                                    </div>
+                                    <span class="text-sm text-white">25%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-4">
+                        <h3 class="text-lg font-medium text-white mb-3">Top Protocols</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-300">HTTPS</span>
+                                <span class="text-sm text-white">45%</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-300">SSH</span>
+                                <span class="text-sm text-white">30%</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-300">DNS</span>
+                                <span class="text-sm text-white">15%</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-300">FTP</span>
+                                <span class="text-sm text-white">10%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Responsive CSS -->
+        <style>
+            .horizontal-dashboard {
+                display: flex !important;
+                flex-direction: row !important;
+                gap: 20px !important;
+                padding: 20px !important;
+                width: 100% !important;
+            }
+            
+            .dashboard-panel {
+                flex: 1 !important;
+                min-width: 0 !important;
+            }
+            
+            @media (max-width: 1024px) {
+                .horizontal-dashboard {
+                    flex-direction: column !important;
+                }
+                
+                .dashboard-panel {
+                    flex: none !important;
+                    width: 100% !important;
+                }
+            }
+        </style>
     </div>
+
+    <script>
+        (function() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const mobileToggle = document.getElementById('sidebar-mobile-toggle');
+            const closeBtn = document.getElementById('sidebar-close');
+            const collapseTop = document.getElementById('sidebar-collapse-toggle');
+            const collapseBottom = document.getElementById('sidebar-collapse-toggle-bottom');
+            const STORAGE_KEY = 'smartsoc.sidebar.collapsed';
+            let collapsed = false;
+            try { const persisted = localStorage.getItem(STORAGE_KEY); if (persisted !== null) collapsed = persisted === 'true'; } catch (e) {}
+            function applyCollapsedState() {
+                const isDesktop = window.innerWidth >= 1024;
+                if (isDesktop) {
+                    document.body.classList.add('desktop-with-sidebar');
+                    document.body.classList.toggle('desktop-with-sidebar-collapsed', collapsed);
+                    sidebar.classList.toggle('collapsed', collapsed);
+                    const topIcon = document.getElementById('sidebar-collapse-icon-top');
+                    const botIcon = document.getElementById('sidebar-collapse-icon-bottom');
+                    const expanded = !collapsed;
+                    collapseTop && collapseTop.setAttribute('aria-expanded', String(expanded));
+                    collapseBottom && collapseBottom.setAttribute('aria-expanded', String(expanded));
+                    if (topIcon) topIcon.className = expanded ? 'fas fa-angle-left' : 'fas fa-angle-right';
+                    if (botIcon) botIcon.className = expanded ? 'fas fa-angle-left' : 'fas fa-angle-right';
+                } else {
+                    document.body.classList.remove('desktop-with-sidebar');
+                    document.body.classList.remove('desktop-with-sidebar-collapsed');
+                    sidebar.classList.remove('collapsed');
+                }
+            }
+            function setCollapsed(next) { collapsed = next; try { localStorage.setItem(STORAGE_KEY, String(collapsed)); } catch (e) {} applyCollapsedState(); }
+            function openMobile() { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); document.body.classList.add('sidebar-modal-open'); mobileToggle && mobileToggle.setAttribute('aria-expanded','true'); closeBtn && closeBtn.focus && closeBtn.focus(); }
+            function closeMobile() { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); document.body.classList.remove('sidebar-modal-open'); mobileToggle && mobileToggle.setAttribute('aria-expanded','false'); mobileToggle && mobileToggle.focus && mobileToggle.focus(); }
+            mobileToggle && mobileToggle.addEventListener('click', openMobile);
+            overlay && overlay.addEventListener('click', closeMobile);
+            closeBtn && closeBtn.addEventListener('click', closeMobile);
+            const toggleCollapse = () => setCollapsed(!collapsed);
+            collapseTop && collapseTop.addEventListener('click', toggleCollapse);
+            collapseBottom && collapseBottom.addEventListener('click', toggleCollapse);
+            document.addEventListener('keydown', (e) => { if ((e.key === 'Escape' || e.key === 'Esc') && window.innerWidth < 1024 && !sidebar.classList.contains('-translate-x-full')) { closeMobile(); } });
+            function init() { if (window.innerWidth >= 1024) { sidebar.classList.remove('-translate-x-full'); overlay.classList.add('hidden'); } else { document.body.classList.remove('desktop-with-sidebar'); document.body.classList.remove('desktop-with-sidebar-collapsed'); sidebar.classList.remove('collapsed'); } applyCollapsedState(); }
+            init();
+            // Active link highlighting
+            (function markActiveLinks(){
+                const links = sidebar.querySelectorAll('nav a');
+                const current = location.pathname.split('/').pop();
+                links.forEach(a => {
+                    const href = a.getAttribute('href') || '';
+                    const file = href.split('/').pop();
+                    const isActive = file === '' ? current === '' : current === file;
+                    a.classList.toggle('active', isActive);
+                    if (isActive) {
+                        a.style.boxShadow = 'inset 3px 0 0 0 rgb(99 102 241)';
+                        a.classList.add('text-white');
+                        a.classList.add('bg-slate-800');
+                    }
+                });
+            })();
+            // Keyboard navigation and collapsed tooltips
+            (function enhanceA11y(){
+                const navLinks = Array.from(sidebar.querySelectorAll('nav a'));
+                sidebar.addEventListener('keydown', (e) => {
+                    if (!['ArrowDown','ArrowUp','Home','End'].includes(e.key)) return;
+                    const active = document.activeElement;
+                    const idx = navLinks.indexOf(active);
+                    let nextIdx = idx;
+                    if (e.key === 'ArrowDown') nextIdx = Math.min(navLinks.length-1, idx + 1);
+                    if (e.key === 'ArrowUp') nextIdx = Math.max(0, idx - 1);
+                    if (e.key === 'Home') nextIdx = 0;
+                    if (e.key === 'End') nextIdx = navLinks.length - 1;
+                    if (nextIdx !== idx && navLinks[nextIdx]) {
+                        e.preventDefault();
+                        navLinks[nextIdx].focus();
+                    }
+                });
+                function syncCollapsedTooltips() {
+                    const isCollapsed = sidebar.classList.contains('collapsed') && window.innerWidth >= 1024;
+                    navLinks.forEach(a => {
+                        const label = (a.textContent || '').trim();
+                        if (isCollapsed) a.setAttribute('title', label);
+                        else a.removeAttribute('title');
+                    });
+                }
+                syncCollapsedTooltips();
+                window.addEventListener('resize', syncCollapsedTooltips);
+            })();
+            window.addEventListener('resize', applyCollapsedState);
+        })();
+    </script>
 </body>
 </html>
 

@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartSOC - Settings</title>
+    <script>
+        // On page load or when changing themes, best to add inline in `head` to avoid FOUC
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark')
+        } else {
+            document.documentElement.classList.remove('dark')
+        }
+
+        // Configure Tailwind CSS to use class strategy for dark mode
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <link rel="stylesheet" href="assets/styles.css">
+    <link rel="stylesheet" href="assets/shared-buttons.css">
+    <link rel="stylesheet" href="assets/chatbot.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+       <!-- <head> -->
+        <!-- ...existing code... -->
+        <!-- <style>
+            body {
+                font-family: 'Inter', sans-serif;
+                background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+                color: #d1d5db;
+            }
+    
+            #particles-js {
+                position: fixed;
+                width: 100%;
+                height: 100%;
+                top: 0;
+                left: 0;
+                z-index: -1;
+            }
+    
+            .card {
+                background: rgba(31, 41, 55, 0.8);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(55, 65, 81, 0.3);
+                border-radius: 0.75rem;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+                transition: all 0.3s ease;
+            }
+    
+            .card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+            }
+    
+            .metric-card {
+                background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+                border: 1px solid rgba(59, 130, 246, 0.2);
+            }
+    
+            .threat-timeline {
+                position: relative;
+            }
+    
+            .threat-timeline::before {
+                content: '';
+                position: absolute;
+                left: 20px;
+                top: 0;
+                bottom: 0;
+                width: 2px;
+                background: linear-gradient(to bottom, #3b82f6, #8b5cf6);
+            }
+    
+            .threat-item {
+                position: relative;
+                margin-left: 40px;
+                margin-bottom: 20px;
+            }
+    
+            .threat-item::before {
+                content: '';
+                position: absolute;
+                left: -30px;
+                top: 8px;
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background: #3b82f6;
+                border: 3px solid #1f2937;
+            }
+    
+            .threat-item.high::before {
+                background: #ef4444;
+            }
+    
+            .threat-item.medium::before {
+                background: #f59e0b;
+            }
+    
+            .threat-item.low::before {
+                background: #10b981;
+            }
+        </style> -->
+        <!-- ...existing code... -->
+    <!-- </head> -->
+    <style>
+        :root { --sidebar-width: 16rem; --sidebar-width-collapsed: 4.5rem; --sidebar-transition-duration: 300ms; --sidebar-transition-ease: ease-in-out; }
+        body { transition: padding-left var(--sidebar-transition-duration) var(--sidebar-transition-ease); }
+        body.desktop-with-sidebar { padding-left: var(--sidebar-width); }
+        body.desktop-with-sidebar-collapsed { padding-left: var(--sidebar-width-collapsed); }
+        #sidebar { width: var(--sidebar-width); transition: width var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform var(--sidebar-transition-duration) var(--sidebar-transition-ease); }
+        #sidebar.collapsed { width: var(--sidebar-width-collapsed); }
+        #sidebar.collapsed nav a { justify-content: center; gap: 0; }
+        #sidebar.collapsed nav a span.text-sm { display: none; }
+        #sidebar.collapsed .brand-text { display: none; }
+        body.sidebar-modal-open { overflow: hidden; }
+        #sidebar nav a.sidebar-link { position: relative; transition: background-color var(--sidebar-transition-duration) var(--sidebar-transition-ease), color var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform 150ms ease; border-radius: 0.5rem; }
+        #sidebar nav a.sidebar-link::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-top-left-radius: 6px; border-bottom-left-radius: 6px; background: linear-gradient(180deg, rgba(99,102,241,0.8), rgba(147,51,234,0.8)); opacity: 0; transform: scaleY(0.4); transition: opacity var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform var(--sidebar-transition-duration) var(--sidebar-transition-ease); }
+        #sidebar nav a.sidebar-link:hover::before, #sidebar nav a.sidebar-link.active::before { opacity: 1; transform: scaleY(1); }
+        #sidebar nav a.sidebar-link:hover { background: rgba(30, 41, 59, 0.8); }
+        #sidebar nav a.sidebar-link.active { background: rgba(30, 41, 59, 0.95); color: #fff; }
+        #sidebar nav a.sidebar-link .sidebar-icon { transition: color var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform 150ms ease; color: #94a3b8; }
+        #sidebar nav a.sidebar-link:hover .sidebar-icon, #sidebar nav a.sidebar-link.active .sidebar-icon { color: #fff; transform: translateX(1px); }
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 lg:p-8">
+    <button id="sidebar-mobile-toggle" class="lg:hidden fixed top-3 left-3 z-50 inline-flex items-center justify-center rounded-md p-2 text-slate-200 bg-slate-900/90 border border-slate-800 hover:bg-slate-800 transition" aria-label="Open sidebar">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div id="sidebar-overlay" class="hidden lg:hidden fixed inset-0 z-40 bg-black/40"></div>
+    <aside id="sidebar" class="fixed z-50 top-0 left-0 h-screen bg-slate-900 text-slate-200 border-r border-slate-800 transform -translate-x-full lg:translate-x-0" role="dialog" aria-modal="true" aria-label="Sidebar">
+        <div class="flex items-center justify-between px-4 py-4 border-b border-slate-800">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-inner">◆</div>
+                <span class="brand-text text-sm font-semibold truncate hidden sm:block">SmartSOC</span>
+            </div>
+            <button id="sidebar-collapse-toggle" class="hidden lg:inline-flex items-center justify-center rounded-md p-2 text-slate-300 hover:bg-slate-800 transition" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">
+                <i id="sidebar-collapse-icon-top" class="fas fa-angle-left"></i>
+            </button>
+            <button id="sidebar-close" class="lg:hidden inline-flex items-center justify-center rounded-md p-2 text-slate-300 hover:bg-slate-800 transition" aria-label="Close sidebar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <nav class="px-2 py-3 overflow-y-auto h-[calc(100vh-3.25rem)]">
+            <ul class="space-y-1">
+                <li><a href="index.html" class="sidebar-link group flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-gauge-high w-5"></i><span class="truncate text-sm font-medium">Dashboard</span></a></li>
+                <li><a href="threat-detection.html" class="sidebar-link group flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-triangle-exclamation w-5"></i><span class="truncate text-sm font-medium">Threat Detection</span></a></li>
+                <li><a href="cases.html" class="sidebar-link group flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-fire w-5"></i><span class="truncate text-sm font-medium">Incidents</span></a></li>
+                <li><a href="threat-intel.html" class="sidebar-link group flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-brain w-5"></i><span class="truncate text-sm font-medium">Threat Intel</span></a></li>
+                <li><a href="analytics.html" class="sidebar-link group flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-chart-line w-5"></i><span class="truncate text-sm font-medium">Analytics</span></a></li>
+                <li><a href="assets.html" class="sidebar-link group flex items-center gap-3 rounded-md px-3 py-2 text-slate-300"><i class="sidebar-icon fas fa-users w-5"></i><span class="truncate text-sm font-medium">Users</span></a></li>
+                <li><a href="settings.html" class="sidebar-link group flex items-center gap-3 rounded-md px-3 py-2 text-white bg-slate-800" style="box-shadow: inset 3px 0 0 0 rgb(99 102 241)"><i class="sidebar-icon fas fa-gear w-5"></i><span class="truncate text-sm font-medium">Settings</span></a></li>
+            </ul>
+        </nav>
+        <div class="hidden lg:flex absolute bottom-0 left-0 right-0 p-2 border-t border-slate-800">
+            <button id="sidebar-collapse-toggle-bottom" class="w-full inline-flex items-center justify-center gap-2 rounded-md px-2 py-2 text-xs text-slate-300 hover:bg-slate-800 transition" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">
+                <i id="sidebar-collapse-icon-bottom" class="fas fa-angle-left"></i>
+            </button>
+        </div>
+    </aside>
+
+    <div id="particles-js" style="position:fixed; inset:0; z-index:-1"></div>
+
+    <div id="main-container" class="max-w-7xl mx-auto relative z-10">
+        <header class="flex items-center justify-between mb-8">
+            <h1 class="text-2xl font-bold text-white">Settings</h1>
+            <a href="index.html" class="text-sm text-slate-300 hover:underline">Back to Dashboard</a>
+        </header>
+        <main class="space-y-6">
+            <!-- System Settings -->
+            <div class="card p-6">
+                <h2 class="text-xl font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-cog mr-3 text-blue-400"></i>
+                    System Settings
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Theme</label>
+                            <select id="theme-select" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white">
+                                <option value="dark">Dark Mode</option>
+                                <option value="light">Light Mode</option>
+                                <option value="auto">Auto (System)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Language</label>
+                            <select id="language-select" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white">
+                                <option value="en">English</option>
+                                <option value="es">Español</option>
+                                <option value="fr">Français</option>
+                                <option value="de">Deutsch</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Time Zone</label>
+                            <select id="timezone-select" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white">
+                                <option value="UTC">UTC</option>
+                                <option value="America/New_York">Eastern Time</option>
+                                <option value="America/Chicago">Central Time</option>
+                                <option value="America/Denver">Mountain Time</option>
+                                <option value="America/Los_Angeles">Pacific Time</option>
+                                <option value="Europe/London">London</option>
+                                <option value="Europe/Paris">Paris</option>
+                                <option value="Asia/Tokyo">Tokyo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="flex items-center gap-2 text-gray-300">
+                                <input type="checkbox" id="persist-collapse" class="accent-indigo-500" checked>
+                                <span class="text-sm">Persist sidebar collapsed state</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="flex items-center gap-2 text-gray-300">
+                                <input type="checkbox" id="auto-refresh" class="accent-indigo-500" checked>
+                                <span class="text-sm">Auto-refresh dashboard data</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="flex items-center gap-2 text-gray-300">
+                                <input type="checkbox" id="sound-alerts" class="accent-indigo-500">
+                                <span class="text-sm">Enable sound alerts</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="flex items-center gap-2 text-gray-300">
+                                <input type="checkbox" id="reduced-motion" class="accent-indigo-500">
+                                <span class="text-sm">Reduce animations (accessibility)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Settings -->
+            <div class="card p-6">
+                <h2 class="text-xl font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-shield-alt mr-3 text-green-400"></i>
+                    Security Settings
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Session Timeout (minutes)</label>
+                            <input type="number" id="session-timeout" value="30" min="5" max="480" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Password Policy</label>
+                            <select id="password-policy" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white">
+                                <option value="standard">Standard (8+ chars)</option>
+                                <option value="strong">Strong (12+ chars, mixed case, numbers)</option>
+                                <option value="enterprise">Enterprise (16+ chars, special chars, history)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Two-Factor Authentication</label>
+                            <div class="flex items-center gap-2">
+                                <button id="enable-2fa" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">Enable 2FA</button>
+                                <span class="text-xs text-gray-400">Not configured</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="flex items-center gap-2 text-gray-300">
+                                <input type="checkbox" id="audit-logging" class="accent-indigo-500" checked>
+                                <span class="text-sm">Enable audit logging</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="flex items-center gap-2 text-gray-300">
+                                <input type="checkbox" id="ip-whitelist" class="accent-indigo-500">
+                                <span class="text-sm">Enable IP whitelist</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="flex items-center gap-2 text-gray-300">
+                                <input type="checkbox" id="encrypt-storage" class="accent-indigo-500" checked>
+                                <span class="text-sm">Encrypt local storage</span>
+                            </label>
+                        </div>
+            <div>
+                            <label class="flex items-center gap-2 text-gray-300">
+                                <input type="checkbox" id="auto-logout" class="accent-indigo-500" checked>
+                                <span class="text-sm">Auto-logout on inactivity</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification Settings -->
+            <div class="card p-6">
+                <h2 class="text-xl font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-bell mr-3 text-yellow-400"></i>
+                    Notification Settings
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Email Notifications</label>
+                            <div class="space-y-2">
+                                <label class="flex items-center gap-2 text-gray-300">
+                                    <input type="checkbox" id="email-critical" class="accent-indigo-500" checked>
+                                    <span class="text-sm">Critical alerts</span>
+                                </label>
+                                <label class="flex items-center gap-2 text-gray-300">
+                                    <input type="checkbox" id="email-high" class="accent-indigo-500" checked>
+                                    <span class="text-sm">High severity incidents</span>
+                                </label>
+                                <label class="flex items-center gap-2 text-gray-300">
+                                    <input type="checkbox" id="email-daily" class="accent-indigo-500">
+                                    <span class="text-sm">Daily summary reports</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Push Notifications</label>
+                            <div class="space-y-2">
+                                <label class="flex items-center gap-2 text-gray-300">
+                                    <input type="checkbox" id="push-browser" class="accent-indigo-500">
+                                    <span class="text-sm">Browser notifications</span>
+                                </label>
+                                <label class="flex items-center gap-2 text-gray-300">
+                                    <input type="checkbox" id="push-mobile" class="accent-indigo-500">
+                                    <span class="text-sm">Mobile app notifications</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Alert Thresholds</label>
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-300">High severity threshold</span>
+                                    <input type="number" id="high-threshold" value="5" min="1" max="100" class="w-16 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-white text-sm">
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-300">Medium severity threshold</span>
+                                    <input type="number" id="medium-threshold" value="10" min="1" max="100" class="w-16 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-white text-sm">
+                                </div>
+                            </div>
+            </div>
+            <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Quiet Hours</label>
+                            <div class="flex items-center gap-2">
+                                <input type="time" id="quiet-start" value="22:00" class="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-white text-sm">
+                                <span class="text-gray-400">to</span>
+                                <input type="time" id="quiet-end" value="08:00" class="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-white text-sm">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Integration Settings -->
+            <div class="card p-6">
+                <h2 class="text-xl font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-plug mr-3 text-purple-400"></i>
+                    Integration Settings
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">SIEM Integration</label>
+                            <select id="siem-provider" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white">
+                                <option value="none">None</option>
+                                <option value="splunk">Splunk</option>
+                                <option value="qradar">IBM QRadar</option>
+                                <option value="arcsight">ArcSight</option>
+                                <option value="elastic">Elastic SIEM</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">API Endpoint</label>
+                            <input type="url" id="api-endpoint" placeholder="https://api.example.com" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">API Key</label>
+                            <input type="password" id="api-key" placeholder="Enter API key" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white">
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Ticketing System</label>
+                            <select id="ticketing-system" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white">
+                                <option value="none">None</option>
+                                <option value="servicenow">ServiceNow</option>
+                                <option value="jira">Jira</option>
+                                <option value="remedy">BMC Remedy</option>
+                                <option value="custom">Custom API</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Webhook URL</label>
+                            <input type="url" id="webhook-url" placeholder="https://hooks.example.com/security" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white">
+            </div>
+            <div>
+                            <label class="flex items-center gap-2 text-gray-300">
+                                <input type="checkbox" id="auto-ticket" class="accent-indigo-500">
+                                <span class="text-sm">Auto-create tickets for high severity</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Settings -->
+            <div class="card p-6">
+                <h2 class="text-xl font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-tachometer-alt mr-3 text-orange-400"></i>
+                    Performance Settings
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Data Refresh Interval (seconds)</label>
+                            <input type="number" id="refresh-interval" value="30" min="5" max="300" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Chart Data Points</label>
+                            <input type="number" id="chart-points" value="50" min="10" max="200" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Log Retention (days)</label>
+                            <input type="number" id="log-retention" value="30" min="1" max="365" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white">
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="flex items-center gap-2 text-gray-300">
+                                <input type="checkbox" id="enable-caching" class="accent-indigo-500" checked>
+                                <span class="text-sm">Enable data caching</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="flex items-center gap-2 text-gray-300">
+                                <input type="checkbox" id="lazy-loading" class="accent-indigo-500" checked>
+                                <span class="text-sm">Enable lazy loading</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="flex items-center gap-2 text-gray-300">
+                                <input type="checkbox" id="compression" class="accent-indigo-500" checked>
+                                <span class="text-sm">Enable data compression</span>
+                            </label>
+            </div>
+            <div>
+                            <button id="clear-cache" class="bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded text-sm">
+                                <i class="fas fa-trash mr-2"></i>Clear Cache
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Information -->
+            <div class="card p-6">
+                <h2 class="text-xl font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-info-circle mr-3 text-blue-400"></i>
+                    System Information
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Version:</span>
+                            <span class="text-white">2.1.0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Build:</span>
+                            <span class="text-white">2025.01.15</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Status:</span>
+                            <span class="text-green-400">Operational</span>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Uptime:</span>
+                            <span class="text-white">99.9%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Last Update:</span>
+                            <span class="text-white">2025-01-15</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">License:</span>
+                            <span class="text-white">Enterprise</span>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Database:</span>
+                            <span class="text-white">PostgreSQL 14</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Cache:</span>
+                            <span class="text-white">Redis 6.2</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Storage:</span>
+                            <span class="text-white">2.3 TB</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="card p-6">
+                <h2 class="text-xl font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-tools mr-3 text-gray-400"></i>
+                    Actions
+                </h2>
+                <div class="flex flex-wrap gap-4">
+                    <button id="save-settings" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                        <i class="fas fa-save mr-2"></i>Save Settings
+                    </button>
+                    <button id="reset-settings" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                        <i class="fas fa-undo mr-2"></i>Reset to Defaults
+                    </button>
+                    <button id="export-config" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                        <i class="fas fa-download mr-2"></i>Export Configuration
+                    </button>
+                    <button id="import-config" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">
+                        <i class="fas fa-upload mr-2"></i>Import Configuration
+                    </button>
+                    <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Advanced Settings Manager
+        class SettingsManager {
+            constructor() {
+                this.settings = this.loadSettings();
+                this.init();
+            }
+
+            init() {
+                this.initializeSidebar();
+                this.initializeSettings();
+                this.bindEvents();
+                this.loadSavedSettings();
+            }
+
+            // Sidebar functionality
+            initializeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const mobileToggle = document.getElementById('sidebar-mobile-toggle');
+            const closeBtn = document.getElementById('sidebar-close');
+            const collapseTop = document.getElementById('sidebar-collapse-toggle');
+            const collapseBottom = document.getElementById('sidebar-collapse-toggle-bottom');
+            const STORAGE_KEY = 'smartsoc.sidebar.collapsed';
+            let collapsed = false;
+                
+                try { 
+                    const persisted = localStorage.getItem(STORAGE_KEY); 
+                    if (persisted !== null) collapsed = persisted === 'true'; 
+                } catch(e) {}
+
+                const applyCollapsedState = () => {
+                const isDesktop = window.innerWidth >= 1024;
+                if (isDesktop) {
+                    document.body.classList.add('desktop-with-sidebar');
+                    document.body.classList.toggle('desktop-with-sidebar-collapsed', collapsed);
+                    sidebar.classList.toggle('collapsed', collapsed);
+                    const topIcon = document.getElementById('sidebar-collapse-icon-top');
+                    const botIcon = document.getElementById('sidebar-collapse-icon-bottom');
+                    const expanded = !collapsed;
+                    collapseTop && collapseTop.setAttribute('aria-expanded', String(expanded));
+                    collapseBottom && collapseBottom.setAttribute('aria-expanded', String(expanded));
+                    if (topIcon) topIcon.className = expanded ? 'fas fa-angle-left' : 'fas fa-angle-right';
+                    if (botIcon) botIcon.className = expanded ? 'fas fa-angle-left' : 'fas fa-angle-right';
+                } else {
+                    document.body.classList.remove('desktop-with-sidebar');
+                    document.body.classList.remove('desktop-with-sidebar-collapsed');
+                    sidebar.classList.remove('collapsed');
+                }
+                };
+
+                const setCollapsed = (next) => { 
+                    collapsed = next; 
+                    try{localStorage.setItem(STORAGE_KEY, String(collapsed));}catch(e){} 
+                    applyCollapsedState(); 
+                };
+
+                const openMobile = () => { 
+                    sidebar.classList.remove('-translate-x-full'); 
+                    overlay.classList.remove('hidden'); 
+                    document.body.classList.add('sidebar-modal-open'); 
+                    mobileToggle && mobileToggle.setAttribute('aria-expanded','true'); 
+                    closeBtn && closeBtn.focus && closeBtn.focus(); 
+                };
+
+                const closeMobile = () => { 
+                    sidebar.classList.add('-translate-x-full'); 
+                    overlay.classList.add('hidden'); 
+                    document.body.classList.remove('sidebar-modal-open'); 
+                    mobileToggle && mobileToggle.setAttribute('aria-expanded','false'); 
+                    mobileToggle && mobileToggle.focus && mobileToggle.focus(); 
+                };
+
+            mobileToggle && mobileToggle.addEventListener('click', openMobile);
+            overlay && overlay.addEventListener('click', closeMobile);
+            closeBtn && closeBtn.addEventListener('click', closeMobile);
+                const toggle = () => setCollapsed(!collapsed);
+            collapseTop && collapseTop.addEventListener('click', toggle);
+            collapseBottom && collapseBottom.addEventListener('click', toggle);
+                
+                document.addEventListener('keydown', (e) => { 
+                    if((e.key==='Escape'||e.key==='Esc') && window.innerWidth<1024 && !sidebar.classList.contains('-translate-x-full')){ 
+                        closeMobile(); 
+                    } 
+                });
+
+                const init = () => { 
+                    if (window.innerWidth >= 1024){ 
+                        sidebar.classList.remove('-translate-x-full'); 
+                        overlay.classList.add('hidden'); 
+                    } else { 
+                        document.body.classList.remove('desktop-with-sidebar'); 
+                        document.body.classList.remove('desktop-with-sidebar-collapsed'); 
+                        sidebar.classList.remove('collapsed'); 
+                    } 
+                    applyCollapsedState(); 
+                };
+
+            init();
+                this.markActiveLinks();
+                this.enhanceAccessibility();
+                window.addEventListener('resize', applyCollapsedState);
+            }
+
+            markActiveLinks() {
+                const sidebar = document.getElementById('sidebar');
+                const links = sidebar.querySelectorAll('nav a');
+                const current = location.pathname.split('/').pop();
+                links.forEach(a => {
+                    const href = a.getAttribute('href') || '';
+                    const file = href.split('/').pop();
+                    const isActive = file === '' ? current === '' : current === file;
+                    a.classList.toggle('active', isActive);
+                    if (isActive) {
+                        a.style.boxShadow = 'inset 3px 0 0 0 rgb(99 102 241)';
+                        a.classList.add('text-white');
+                        a.classList.add('bg-slate-800');
+                    }
+                });
+            }
+
+            enhanceAccessibility() {
+                const sidebar = document.getElementById('sidebar');
+                const navLinks = Array.from(sidebar.querySelectorAll('nav a'));
+                sidebar.addEventListener('keydown', (e) => {
+                    if (!['ArrowDown','ArrowUp','Home','End'].includes(e.key)) return;
+                    const active = document.activeElement;
+                    const idx = navLinks.indexOf(active);
+                    let nextIdx = idx;
+                    if (e.key === 'ArrowDown') nextIdx = Math.min(navLinks.length-1, idx + 1);
+                    if (e.key === 'ArrowUp') nextIdx = Math.max(0, idx - 1);
+                    if (e.key === 'Home') nextIdx = 0;
+                    if (e.key === 'End') nextIdx = navLinks.length - 1;
+                    if (nextIdx !== idx && navLinks[nextIdx]) {
+                        e.preventDefault();
+                        navLinks[nextIdx].focus();
+                    }
+                });
+
+                const syncCollapsedTooltips = () => {
+                    const isCollapsed = sidebar.classList.contains('collapsed') && window.innerWidth >= 1024;
+                    navLinks.forEach(a => {
+                        const label = (a.textContent || '').trim();
+                        if (isCollapsed) a.setAttribute('title', label);
+                        else a.removeAttribute('title');
+                    });
+                };
+                syncCollapsedTooltips();
+                window.addEventListener('resize', syncCollapsedTooltips);
+            }
+
+            // Settings management
+            loadSettings() {
+                try {
+                    return JSON.parse(localStorage.getItem('smartsoc.settings') || '{}');
+                } catch (e) {
+                    return {};
+                }
+            }
+
+            saveSettings() {
+                try {
+                    localStorage.setItem('smartsoc.settings', JSON.stringify(this.settings));
+                    this.showNotification('Settings saved successfully!', 'success');
+                } catch (e) {
+                    this.showNotification('Failed to save settings', 'error');
+                }
+            }
+
+            loadSavedSettings() {
+                // Load theme
+                const theme = this.settings.theme || 'dark';
+                this.applyTheme(theme);
+                document.getElementById('theme-select').value = theme;
+
+                // Load other settings
+                Object.keys(this.settings).forEach(key => {
+                    const element = document.getElementById(key);
+                    if (element) {
+                        if (element.type === 'checkbox') {
+                            element.checked = this.settings[key];
+                        } else {
+                            element.value = this.settings[key];
+                        }
+                    }
+                });
+            }
+
+            applyTheme(theme) {
+                if (theme === 'auto') {
+                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    document.documentElement.classList.toggle('dark', prefersDark);
+                } else {
+                    document.documentElement.classList.toggle('dark', theme === 'dark');
+                }
+                localStorage.theme = theme;
+            }
+
+            initializeSettings() {
+                // Set default values
+                const defaults = {
+                    theme: 'dark',
+                    language: 'en',
+                    timezone: 'UTC',
+                    'persist-collapse': true,
+                    'auto-refresh': true,
+                    'sound-alerts': false,
+                    'reduced-motion': false,
+                    'session-timeout': 30,
+                    'password-policy': 'standard',
+                    'audit-logging': true,
+                    'ip-whitelist': false,
+                    'encrypt-storage': true,
+                    'auto-logout': true,
+                    'email-critical': true,
+                    'email-high': true,
+                    'email-daily': false,
+                    'push-browser': false,
+                    'push-mobile': false,
+                    'high-threshold': 5,
+                    'medium-threshold': 10,
+                    'quiet-start': '22:00',
+                    'quiet-end': '08:00',
+                    'siem-provider': 'none',
+                    'ticketing-system': 'none',
+                    'auto-ticket': false,
+                    'refresh-interval': 30,
+                    'chart-points': 50,
+                    'log-retention': 30,
+                    'enable-caching': true,
+                    'lazy-loading': true,
+                    'compression': true
+                };
+
+                Object.keys(defaults).forEach(key => {
+                    if (!(key in this.settings)) {
+                        this.settings[key] = defaults[key];
+                    }
+                });
+            }
+
+            bindEvents() {
+                // Theme selector
+                document.getElementById('theme-select').addEventListener('change', (e) => {
+                    this.settings.theme = e.target.value;
+                    this.applyTheme(e.target.value);
+                });
+
+                // All form inputs
+                const inputs = document.querySelectorAll('input, select, textarea');
+                inputs.forEach(input => {
+                    input.addEventListener('change', (e) => {
+                        const key = e.target.id;
+                        if (key) {
+                            if (e.target.type === 'checkbox') {
+                                this.settings[key] = e.target.checked;
+                            } else {
+                                this.settings[key] = e.target.value;
+                            }
+                        }
+                    });
+                });
+
+                // Action buttons
+                document.getElementById('save-settings').addEventListener('click', () => {
+                    this.saveSettings();
+                });
+
+                document.getElementById('reset-settings').addEventListener('click', () => {
+                    if (confirm('Are you sure you want to reset all settings to defaults?')) {
+                        this.resetToDefaults();
+                    }
+                });
+
+                document.getElementById('export-config').addEventListener('click', () => {
+                    this.exportConfiguration();
+                });
+
+                document.getElementById('import-config').addEventListener('click', () => {
+                    this.importConfiguration();
+                });
+
+                document.getElementById('clear-cache').addEventListener('click', () => {
+                    this.clearCache();
+                });
+
+                document.getElementById('enable-2fa').addEventListener('click', () => {
+                    this.enable2FA();
+                });
+
+                // Notification permission request
+                document.getElementById('push-browser').addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        this.requestNotificationPermission();
+                }
+            });
+        }
+
+            resetToDefaults() {
+                this.settings = {};
+                this.initializeSettings();
+                this.loadSavedSettings();
+                this.showNotification('Settings reset to defaults', 'info');
+            }
+
+            exportConfiguration() {
+                const config = {
+                    version: '2.1.0',
+                    timestamp: new Date().toISOString(),
+                    settings: this.settings
+                };
+
+                const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `smartsoc-config-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                this.showNotification('Configuration exported successfully', 'success');
+            }
+
+            importConfiguration() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                input.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            try {
+                                const config = JSON.parse(e.target.result);
+                                if (config.settings) {
+                                    this.settings = { ...this.settings, ...config.settings };
+                                    this.loadSavedSettings();
+                                    this.showNotification('Configuration imported successfully', 'success');
+                                } else {
+                                    this.showNotification('Invalid configuration file', 'error');
+                                }
+                            } catch (error) {
+                                this.showNotification('Failed to parse configuration file', 'error');
+                            }
+                        };
+                        reader.readAsText(file);
+                    }
+                };
+                input.click();
+            }
+
+            clearCache() {
+                if ('caches' in window) {
+                    caches.keys().then(names => {
+                        names.forEach(name => {
+                            caches.delete(name);
+                        });
+                    });
+                }
+                this.showNotification('Cache cleared successfully', 'success');
+            }
+
+            enable2FA() {
+                // Simulate 2FA setup
+                const qrCode = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2ZmZiIvPjx0ZXh0IHg9IjEwMCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiMwMDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPjJGQSBRUiBDb2RlPC90ZXh0Pjwvc3ZnPg==';
+                
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                modal.innerHTML = `
+                    <div class="bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4">
+                        <h3 class="text-xl font-semibold text-white mb-4">Enable Two-Factor Authentication</h3>
+                        <div class="text-center mb-4">
+                            <img src="${qrCode}" alt="QR Code" class="mx-auto mb-4">
+                            <p class="text-gray-300 text-sm mb-4">Scan this QR code with your authenticator app</p>
+                            <input type="text" placeholder="Enter verification code" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white mb-4">
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="verify-2fa" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Verify & Enable</button>
+                            <button id="cancel-2fa" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded">Cancel</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+
+                document.getElementById('verify-2fa').addEventListener('click', () => {
+                    document.getElementById('enable-2fa').textContent = '2FA Enabled';
+                    document.getElementById('enable-2fa').classList.remove('bg-green-600', 'hover:bg-green-700');
+                    document.getElementById('enable-2fa').classList.add('bg-gray-600');
+                    document.querySelector('#enable-2fa').nextElementSibling.textContent = 'Configured';
+                    document.body.removeChild(modal);
+                    this.showNotification('Two-factor authentication enabled', 'success');
+                });
+
+                document.getElementById('cancel-2fa').addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                });
+            }
+
+            requestNotificationPermission() {
+                if ('Notification' in window) {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            this.showNotification('Browser notifications enabled', 'success');
+                        } else {
+                            document.getElementById('push-browser').checked = false;
+                            this.showNotification('Browser notifications blocked', 'warning');
+                        }
+                    });
+                } else {
+                    document.getElementById('push-browser').checked = false;
+                    this.showNotification('Browser notifications not supported', 'warning');
+                }
+            }
+
+            showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                const colors = {
+                    success: 'bg-green-600',
+                    error: 'bg-red-600',
+                    warning: 'bg-yellow-600',
+                    info: 'bg-blue-600'
+                };
+                
+                notification.className = `fixed top-4 right-4 ${colors[type]} text-white px-4 py-2 rounded shadow-lg z-50`;
+                notification.textContent = message;
+                document.body.appendChild(notification);
+
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 3000);
+            }
+        }
+
+        // Initialize settings manager
+        const settingsManager = new SettingsManager();
+
+        // Logout function
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                sessionStorage.removeItem('analytics_authenticated');
+                localStorage.removeItem('smartsoc.settings');
+                window.location.href = 'analytics-login.html';
+            }
+        }
+
+        // Auto-save settings on change
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputs = document.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.addEventListener('change', () => {
+                    // Auto-save after 1 second of inactivity
+                    clearTimeout(window.autoSaveTimeout);
+                    window.autoSaveTimeout = setTimeout(() => {
+                        settingsManager.saveSettings();
+                    }, 1000);
+                });
+            });
+        });
+    </script>
+    <!-- Load shared particles initializer -->
+    <script src="assets/particles-init.js"></script>
+    <script src="assets/button-functionality.js"></script>
+    <script src="assets/chatbot.js"></script>
+</body>
+</html>
+
+

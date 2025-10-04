@@ -10,22 +10,12 @@
     <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="assets/styles.css">
-    <link rel="stylesheet" href="assets/shared-buttons.css">
-    <link rel="stylesheet" href="assets/chatbot.css">
     <style>
-        :root {
-            --sidebar-width: 16rem;
-            --sidebar-width-collapsed: 4.5rem;
-            --sidebar-transition-duration: 300ms;
-            --sidebar-transition-ease: ease-in-out;
-        }
         body {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
             color: #d1d5db;
             overflow-x: hidden;
-            transition: padding-left var(--sidebar-transition-duration) var(--sidebar-transition-ease);
         }
         
         /* Animated background particles */
@@ -231,155 +221,44 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        /* Sidebar collapse (desktop) */
-        body.desktop-with-sidebar { padding-left: var(--sidebar-width); }
-        body.desktop-with-sidebar-collapsed { padding-left: var(--sidebar-width-collapsed); }
-        #sidebar { width: var(--sidebar-width); transition: width var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform var(--sidebar-transition-duration) var(--sidebar-transition-ease); }
-        #sidebar.collapsed { width: var(--sidebar-width-collapsed); }
-        #sidebar.collapsed nav a { justify-content: center; gap: 0; }
-        #sidebar.collapsed nav a span.truncate { display: none; }
-        #sidebar.collapsed .brand-text { display: none; }
-
-        /* Mobile open state: prevent background scroll */
-        body.sidebar-modal-open { overflow: hidden; }
-
-        /* Sidebar link styling and animations */
-        #sidebar nav a.sidebar-link {
-            position: relative;
-            transition: background-color var(--sidebar-transition-duration) var(--sidebar-transition-ease),
-                        color var(--sidebar-transition-duration) var(--sidebar-transition-ease),
-                        transform 150ms ease;
-            border-radius: 0.5rem;
-        }
-        #sidebar nav a.sidebar-link::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 3px;
-            border-top-left-radius: 6px;
-            border-bottom-left-radius: 6px;
-            background: linear-gradient(180deg, rgba(99,102,241,0.8), rgba(147,51,234,0.8));
-            opacity: 0;
-            transform: scaleY(0.4);
-            transition: opacity var(--sidebar-transition-duration) var(--sidebar-transition-ease),
-                        transform var(--sidebar-transition-duration) var(--sidebar-transition-ease);
-        }
-        #sidebar nav a.sidebar-link:hover::before,
-        #sidebar nav a.sidebar-link.active::before {
-            opacity: 1;
-            transform: scaleY(1);
-        }
-        #sidebar nav a.sidebar-link:hover {
-            background: rgba(30, 41, 59, 0.8);
-        }
-        #sidebar nav a.sidebar-link.active {
-            background: rgba(30, 41, 59, 0.95);
-            color: #fff;
-        }
-        #sidebar nav a.sidebar-link .sidebar-icon {
-            transition: color var(--sidebar-transition-duration) var(--sidebar-transition-ease), transform 150ms ease;
-            color: #94a3b8;
-        }
-        #sidebar nav a.sidebar-link:hover .sidebar-icon,
-        #sidebar nav a.sidebar-link.active .sidebar-icon {
-            color: #fff;
-            transform: translateX(1px);
-        }
-        /* Reduced motion support */
-        @media (prefers-reduced-motion: reduce) {
-            * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
-        }
     </style>
 </head>
 <body class="p-4 sm:p-6 lg:p-8">
-    <!-- Sidebar: SmartSOC Pro -->
-    <button id="sidebar-mobile-toggle" class="lg:hidden fixed top-3 left-3 z-50 inline-flex items-center justify-center rounded-md p-2 text-slate-200 bg-slate-900/90 border border-slate-800 hover:bg-slate-800 transition" aria-controls="sidebar" aria-expanded="false" aria-label="Open sidebar">
-        <i class="fas fa-bars"></i>
-    </button>
-
-    <div id="sidebar-overlay" class="hidden lg:hidden fixed inset-0 z-40 bg-black/40"></div>
-
-    <aside id="sidebar" class="fixed z-50 top-0 left-0 h-screen bg-slate-900 text-slate-200 border-r border-slate-800 transform -translate-x-full lg:translate-x-0" role="dialog" aria-modal="true" aria-label="Sidebar">
-        <!-- Brand -->
-        <div class="flex items-center justify-between px-4 py-4 border-b border-slate-800">
-            <div class="flex items-center gap-3 min-w-0">
-                <div class="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-inner">◆</div>
-                <span class="brand-text text-sm font-semibold truncate hidden sm:block">SmartSOC</span>
-            </div>
-            <button id="sidebar-collapse-toggle" class="hidden lg:inline-flex items-center justify-center rounded-md p-2 text-slate-300 hover:bg-slate-800 transition" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">
-                <i id="sidebar-collapse-icon-top" class="fas fa-angle-left"></i>
-            </button>
-            <button id="sidebar-close" class="lg:hidden inline-flex items-center justify-center rounded-md p-2 text-slate-300 hover:bg-slate-800 transition" aria-label="Close sidebar">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-
-        <!-- Nav -->
-        <nav class="px-2 py-3 overflow-y-auto h-[calc(100vh-3.25rem)]">
-            <ul class="space-y-1">
-                <li>
-                    <a href="index.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 transition-colors">
-                        <i class="sidebar-icon fas fa-gauge-high w-5"></i>
-                        <span class="truncate text-sm font-medium">Dashboard</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="threat-detection.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 transition-colors">
-                        <i class="sidebar-icon fas fa-triangle-exclamation w-5"></i>
-                        <span class="truncate text-sm font-medium">Threat Detection</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="cases.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 transition-colors">
-                        <i class="sidebar-icon fas fa-fire w-5"></i>
-                        <span class="truncate text-sm font-medium">Incidents</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="threat-intel.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 transition-colors">
-                        <i class="sidebar-icon fas fa-brain w-5"></i>
-                        <span class="truncate text-sm font-medium">Threat Intel</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="analytics.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 transition-colors">
-                        <i class="sidebar-icon fas fa-chart-line w-5"></i>
-                        <span class="truncate text-sm font-medium">Analytics</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="playbooks.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 transition-colors">
-                        <i class="sidebar-icon fas fa-diagram-project w-5"></i>
-                        <span class="truncate text-sm font-medium">Automation Playbooks</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="assets.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 transition-colors">
-                        <i class="sidebar-icon fas fa-users w-5"></i>
-                        <span class="truncate text-sm font-medium">Users</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="settings.html" class="sidebar-link group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 transition-colors">
-                        <i class="sidebar-icon fas fa-gear w-5"></i>
-                        <span class="truncate text-sm font-medium">Settings</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-
-        <!-- Bottom collapse button for accessibility -->
-        <div class="hidden lg:flex absolute bottom-0 left-0 right-0 p-2 border-t border-slate-800">
-            <button id="sidebar-collapse-toggle-bottom" class="w-full inline-flex items-center justify-center gap-2 rounded-md px-2 py-2 text-xs text-slate-300 hover:bg-slate-800 transition" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">
-                <i id="sidebar-collapse-icon-bottom" class="fas fa-angle-left"></i>
-            </button>
-        </div>
-    </aside>
     <!-- Particles.js Background -->
     <div id="particles-js"></div>
-    <div id="main-container" class="max-w-7xl mx-auto relative z-10">
+    <!-- Chatbot (re-implemented) -->
+    <div id="chatbot-container" class="fixed bottom-6 right-6 z-50">
+        <button id="chatbot-toggle" class="bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500 transition-transform transform hover:scale-110">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+        </button>
+        <div id="chatbot-window" class="hidden absolute bottom-20 right-0 w-80 card shadow-xl chatbot-bubble chatbot-window relative" style="min-width: 18rem; min-height: 18rem;">
+            <div class="chatbot-halo"></div>
+            <div class="p-4 chatbot-header">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <span class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+                <h3 class="font-semibold text-white">Assistant</h3>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="flex items-center space-x-2 text-xs">
+                            <button id="chatbot-size-sm" class="px-2 py-1 bg-gray-800/60 hover:bg-gray-700 rounded text-gray-200">S</button>
+                            <button id="chatbot-size-md" class="px-2 py-1 bg-gray-800/60 hover:bg-gray-700 rounded text-gray-200">M</button>
+                            <button id="chatbot-size-lg" class="px-2 py-1 bg-gray-800/60 hover:bg-gray-700 rounded text-gray-200">L</button>
+                        </div>
+                        <button id="chatbot-close" class="chatbot-icon-btn" aria-label="Close chatbot">✕</button>
+                    </div>
+                </div>
+            </div>
+            <div id="chatbot-messages" class="p-4 h-64 overflow-y-auto">
+                <div class="text-sm p-2 bg-blue-900/50 rounded-lg text-gray-300 mb-2">Hi! Ask me about software or security topics like brute force, data exfiltration, or ask "what can you do?"</div>
+            </div>
+            <div class="p-2 border-t border-gray-600">
+                <input id="chatbot-input" type="text" class="w-full chatbot-input rounded-md p-2 text-sm" placeholder="Ask a question...">
+            </div>
+            <div class="chatbot-resize-handle"></div>
+        </div>
+    </div>
+    <div class="max-w-7xl mx-auto relative z-10">
         <!-- Header -->
         <header class="flex justify-between items-center mb-8">
             <div class="flex items-center space-x-4">
@@ -409,7 +288,17 @@
                     <a href="analytics.html" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
                         <i class="fas fa-chart-line mr-2"></i>Analytics
                     </a>
-                    <!-- More button removed per request -->
+                    <div class="relative">
+                        <button id="moreBtn" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-ellipsis-h mr-2"></i>More
+                        </button>
+                        <div id="moreMenu" class="hidden absolute right-0 mt-2 w-48 card p-2 z-50">
+                            <a href="cases.html" class="block px-3 py-2 hover:bg-gray-700 rounded">Cases</a>
+                            <a href="threat-intel.html" class="block px-3 py-2 hover:bg-gray-700 rounded">Threat Intelligence</a>
+                            <a href="playbooks.html" class="block px-3 py-2 hover:bg-gray-700 rounded">Automation Playbooks</a>
+                            <a href="assets.html" class="block px-3 py-2 hover:bg-gray-700 rounded">Assets</a>
+                        </div>
+                    </div>
                     <a href="landing.html" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors">
                         <i class="fas fa-home mr-2"></i>Home
                     </a>
@@ -421,332 +310,263 @@
         </header>
 
         <!-- Main Grid Layout -->
-        <main class="space-y-6">
-            <!-- Top Row: Key Metrics Overview -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="card p-6 flex flex-col items-center justify-center threat-indicator">
-                    <div class="flex items-center space-x-2 mb-2">
-                        <i class="fas fa-chart-line text-blue-400"></i>
-                        <h3 class="text-sm font-medium text-gray-400">Total Events</h3>
-                    </div>
-                    <p id="total-events" class="text-4xl font-bold text-white mb-1">0</p>
-                    <div class="flex items-center text-xs text-green-400">
-                        <i class="fas fa-arrow-up mr-1"></i>
-                        <span>+12% from yesterday</span>
-                    </div>
-                </div>
-                <div class="card p-6 flex flex-col items-center justify-center threat-indicator">
-                    <div class="flex items-center space-x-2 mb-2">
-                        <i class="fas fa-exclamation-triangle text-red-400"></i>
-                        <h3 class="text-sm font-medium text-gray-400">High Alerts</h3>
-                    </div>
-                    <p id="high-alerts" class="text-4xl font-bold text-red-500 mb-1">0</p>
-                    <div class="flex items-center text-xs text-red-400">
-                        <i class="fas fa-shield-alt mr-1"></i>
-                        <span>Critical threats</span>
-                    </div>
-                </div>
-                <div class="card p-6 flex flex-col items-center justify-center threat-indicator">
-                    <div class="flex items-center space-x-2 mb-2">
-                        <i class="fas fa-exclamation-circle text-orange-400"></i>
-                        <h3 class="text-sm font-medium text-gray-400">Medium Alerts</h3>
-                    </div>
-                    <p id="medium-alerts" class="text-4xl font-bold text-orange-500 mb-1">0</p>
-                    <div class="flex items-center text-xs text-orange-400">
-                        <i class="fas fa-eye mr-1"></i>
-                        <span>Under review</span>
-                    </div>
-                </div>
-                <div class="card p-6 flex flex-col items-center justify-center threat-indicator">
-                    <div class="flex items-center space-x-2 mb-2">
-                        <i class="fas fa-info-circle text-yellow-400"></i>
-                        <h3 class="text-sm font-medium text-gray-400">Low Alerts</h3>
-                    </div>
-                    <p id="low-alerts" class="text-4xl font-bold text-yellow-500 mb-1">0</p>
-                    <div class="flex items-center text-xs text-yellow-400">
-                        <i class="fas fa-check mr-1"></i>
-                        <span>Auto-resolved</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Middle Row: Critical Operations -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Left: Active Incidents & Alerts -->
-                <div class="space-y-6">
-                    <!-- Alerts Table -->
-                    <div class="card p-4 sm:p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h2 class="text-xl font-semibold text-white flex items-center">
-                                <i class="fas fa-exclamation-triangle mr-3 text-red-400"></i>
-                                Active Incidents
-                            </h2>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-sm text-gray-400">Filter:</span>
-                                <button class="bg-red-600 text-white px-2 py-1 rounded text-xs filter-btn" data-severity="High">High</button>
-                                <button class="bg-orange-600 text-white px-2 py-1 rounded text-xs filter-btn" data-severity="Medium">Medium</button>
-                                <button class="bg-yellow-600 text-white px-2 py-1 rounded text-xs filter-btn" data-severity="Low">Low</button>
-                                <button class="bg-gray-600 text-white px-2 py-1 rounded text-xs filter-btn" data-severity="All">All</button>
-                            </div>
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column: Alerts and Stats -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Enhanced Stats Cards -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="card p-6 flex flex-col items-center justify-center threat-indicator">
+                        <div class="flex items-center space-x-2 mb-2">
+                            <i class="fas fa-chart-line text-blue-400"></i>
+                            <h3 class="text-sm font-medium text-gray-400">Total Events</h3>
                         </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm text-left">
-                                <thead class="table-header">
-                                    <tr>
-                                        <th class="p-3">ID</th>
-                                        <th class="p-3">Timestamp</th>
-                                        <th class="p-3">Type</th>
-                                        <th class="p-3">Severity</th>
-                                        <th class="p-3">Status</th>
-                                        <th class="p-3">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="alerts-table-body">
-                                    <!-- Alerts will be dynamically inserted here -->
-                                    <tr><td colspan="6" class="text-center p-8 text-gray-500">No active incidents. Monitoring...</td></tr>
-                                </tbody>
-                            </table>
+                        <p id="total-events" class="text-4xl font-bold text-white mb-1">0</p>
+                        <div class="flex items-center text-xs text-green-400">
+                            <i class="fas fa-arrow-up mr-1"></i>
+                            <span>+12% from yesterday</span>
                         </div>
                     </div>
-
-                    <!-- Live Threat Feed -->
-                    <div class="card p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h2 class="text-xl font-semibold text-white flex items-center">
-                                <i class="fas fa-stream mr-3 text-red-400"></i>
-                                Live Threat Feed
-                            </h2>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs text-gray-400">Auto-refresh: 2s</span>
-                                <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                            </div>
+                    <div class="card p-6 flex flex-col items-center justify-center threat-indicator">
+                        <div class="flex items-center space-x-2 mb-2">
+                            <i class="fas fa-exclamation-triangle text-red-400"></i>
+                            <h3 class="text-sm font-medium text-gray-400">High Alerts</h3>
                         </div>
-                        <div id="threat-feed" class="space-y-2 max-h-96 overflow-y-auto">
-                            <!-- Threat feed items will be populated by JavaScript -->
+                        <p id="high-alerts" class="text-4xl font-bold text-red-500 mb-1">0</p>
+                        <div class="flex items-center text-xs text-red-400">
+                            <i class="fas fa-shield-alt mr-1"></i>
+                            <span>Critical threats</span>
+                        </div>
+                    </div>
+                    <div class="card p-6 flex flex-col items-center justify-center threat-indicator">
+                        <div class="flex items-center space-x-2 mb-2">
+                            <i class="fas fa-exclamation-circle text-orange-400"></i>
+                            <h3 class="text-sm font-medium text-gray-400">Medium Alerts</h3>
+                        </div>
+                        <p id="medium-alerts" class="text-4xl font-bold text-orange-500 mb-1">0</p>
+                        <div class="flex items-center text-xs text-orange-400">
+                            <i class="fas fa-eye mr-1"></i>
+                            <span>Under review</span>
+                        </div>
+                    </div>
+                    <div class="card p-6 flex flex-col items-center justify-center threat-indicator">
+                        <div class="flex items-center space-x-2 mb-2">
+                            <i class="fas fa-info-circle text-yellow-400"></i>
+                            <h3 class="text-sm font-medium text-gray-400">Low Alerts</h3>
+                        </div>
+                        <p id="low-alerts" class="text-4xl font-bold text-yellow-500 mb-1">0</p>
+                        <div class="flex items-center text-xs text-yellow-400">
+                            <i class="fas fa-check mr-1"></i>
+                            <span>Auto-resolved</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right: Real-time Analytics & System Health -->
-                <div class="space-y-6">
-                    <!-- Real-time Analytics Chart -->
-                    <div class="card p-4 sm:p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h2 class="text-xl font-semibold text-white flex items-center">
-                                <i class="fas fa-chart-area mr-3 text-green-400"></i>
-                                Real-time Analytics
-                            </h2>
-                            <div class="flex space-x-2">
-                                <button class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs">
-                                    <i class="fas fa-play mr-1"></i>Live
-                                </button>
-                            </div>
-                        </div>
-                        <div class="h-64 bg-gray-900 rounded-lg p-4">
-                            <canvas id="threatChart" width="400" height="200"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- System Health -->
-                    <div class="card p-4 sm:p-6">
-                        <h2 class="text-xl font-semibold mb-4 text-white flex items-center">
-                            <i class="fas fa-heartbeat mr-3 text-green-400"></i>
-                            System Health
+                <!-- Threat Intelligence Dashboard -->
+                <div id="threat-intelligence-dashboard" class="card p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-semibold text-white flex items-center">
+                            <i class="fas fa-brain mr-3 text-purple-400"></i>
+                            Threat Intelligence Dashboard
                         </h2>
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-300">CPU Usage</span>
-                                <div class="flex items-center space-x-2">
-                                    <div class="w-20 bg-gray-700 rounded-full h-2">
-                                        <div class="bg-green-500 h-2 rounded-full" style="width: 35%"></div>
-                                    </div>
-                                    <span class="text-sm text-green-400">35%</span>
-                                </div>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-300">Memory Usage</span>
-                                <div class="flex items-center space-x-2">
-                                    <div class="w-20 bg-gray-700 rounded-full h-2">
-                                        <div class="bg-yellow-500 h-2 rounded-full" style="width: 68%"></div>
-                                    </div>
-                                    <span class="text-sm text-yellow-400">68%</span>
-                                </div>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-300">Network I/O</span>
-                                <div class="flex items-center space-x-2">
-                                    <div class="w-20 bg-gray-700 rounded-full h-2">
-                                        <div class="bg-blue-500 h-2 rounded-full" style="width: 42%"></div>
-                                    </div>
-                                    <span class="text-sm text-blue-400">42%</span>
-                                </div>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-300">Storage</span>
-                                <div class="flex items-center space-x-2">
-                                    <div class="w-20 bg-gray-700 rounded-full h-2">
-                                        <div class="bg-red-500 h-2 rounded-full" style="width: 85%"></div>
-                                    </div>
-                                    <span class="text-sm text-red-400">85%</span>
-                                </div>
-                            </div>
+                        <div class="flex space-x-2">
+                            <button id="refresh-alerts-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-all duration-200 hover:scale-105">
+                                <i class="fas fa-sync-alt mr-1"></i>Refresh Alerts
+                            </button>
+                            <button id="export-pdf-btn" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-all duration-200 hover:scale-105">
+                                <i class="fas fa-download mr-1"></i>Export Report
+                            </button>
                         </div>
                     </div>
-
-                    <!-- Threat Intelligence -->
-                    <div id="threat-intelligence-dashboard" class="card p-4 sm:p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h2 class="text-xl font-semibold text-white flex items-center">
-                                <i class="fas fa-brain mr-3 text-purple-400"></i>
-                                Threat Intelligence
-                            </h2>
-                            <div class="flex space-x-2">
-                                <button id="refresh-alerts-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-all duration-200 hover:scale-105">
-                                    <i class="fas fa-sync-alt mr-1"></i>Refresh
-                                </button>
-                                <button id="export-pdf-btn" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-all duration-200 hover:scale-105">
-                                    <i class="fas fa-download mr-1"></i>Export
-                                </button>
+                    
+                    <!-- Threat Map -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-gray-800 rounded-lg p-4">
+                            <h3 class="text-lg font-semibold text-white mb-3">Threat Origins</h3>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-300">Russia</span>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-20 bg-gray-700 rounded-full h-2">
+                                            <div class="bg-red-500 h-2 rounded-full" style="width: 85%"></div>
+                                        </div>
+                                        <span class="text-sm text-red-400">85%</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-300">China</span>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-20 bg-gray-700 rounded-full h-2">
+                                            <div class="bg-orange-500 h-2 rounded-full" style="width: 65%"></div>
+                                        </div>
+                                        <span class="text-sm text-orange-400">65%</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-300">North Korea</span>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-20 bg-gray-700 rounded-full h-2">
+                                            <div class="bg-yellow-500 h-2 rounded-full" style="width: 45%"></div>
+                                        </div>
+                                        <span class="text-sm text-yellow-400">45%</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
-                        <!-- Threat Map -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="bg-gray-800 rounded-lg p-4">
-                                <h3 class="text-lg font-semibold text-white mb-3">Threat Origins</h3>
-                                <div class="space-y-2">
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-sm text-gray-300">Russia</span>
-                                        <div class="flex items-center space-x-2">
-                                            <div class="w-20 bg-gray-700 rounded-full h-2">
-                                                <div class="bg-red-500 h-2 rounded-full" style="width: 85%"></div>
-                                            </div>
-                                            <span class="text-sm text-red-400">85%</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-sm text-gray-300">China</span>
-                                        <div class="flex items-center space-x-2">
-                                            <div class="w-20 bg-gray-700 rounded-full h-2">
-                                                <div class="bg-orange-500 h-2 rounded-full" style="width: 65%"></div>
-                                            </div>
-                                            <span class="text-sm text-orange-400">65%</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-sm text-gray-300">North Korea</span>
-                                        <div class="flex items-center space-x-2">
-                                            <div class="w-20 bg-gray-700 rounded-full h-2">
-                                                <div class="bg-yellow-500 h-2 rounded-full" style="width: 45%"></div>
-                                            </div>
-                                            <span class="text-sm text-yellow-400">45%</span>
-                                        </div>
-                                    </div>
+                        <div class="bg-gray-800 rounded-lg p-4">
+                            <h3 class="text-lg font-semibold text-white mb-3">Attack Vectors</h3>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-300">Phishing</span>
+                                    <span class="text-sm text-red-400 font-semibold">42%</span>
                                 </div>
-                            </div>
-                            
-                            <div class="bg-gray-800 rounded-lg p-4">
-                                <h3 class="text-lg font-semibold text-white mb-3">Attack Vectors</h3>
-                                <div class="space-y-2">
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-sm text-gray-300">Phishing</span>
-                                        <span class="text-sm text-red-400 font-semibold">42%</span>
-                                    </div>
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-sm text-gray-300">Malware</span>
-                                        <span class="text-sm text-orange-400 font-semibold">28%</span>
-                                    </div>
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-sm text-gray-300">DDoS</span>
-                                        <span class="text-sm text-yellow-400 font-semibold">18%</span>
-                                    </div>
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-sm text-gray-300">Insider</span>
-                                        <span class="text-sm text-blue-400 font-semibold">12%</span>
-                                    </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-300">Malware</span>
+                                    <span class="text-sm text-orange-400 font-semibold">28%</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-300">DDoS</span>
+                                    <span class="text-sm text-yellow-400 font-semibold">18%</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-300">Insider</span>
+                                    <span class="text-sm text-blue-400 font-semibold">12%</span>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Alerts Table -->
+                <div class="card p-4 sm:p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-white flex items-center">
+                            <i class="fas fa-exclamation-triangle mr-3 text-red-400"></i>
+                            Active Incidents
+                        </h2>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-gray-400">Filter:</span>
+                            <button class="bg-red-600 text-white px-2 py-1 rounded text-xs filter-btn" data-severity="High">High</button>
+                            <button class="bg-orange-600 text-white px-2 py-1 rounded text-xs filter-btn" data-severity="Medium">Medium</button>
+                            <button class="bg-yellow-600 text-white px-2 py-1 rounded text-xs filter-btn" data-severity="Low">Low</button>
+                            <button class="bg-gray-600 text-white px-2 py-1 rounded text-xs filter-btn" data-severity="All">All</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="table-header">
+                                <tr>
+                                    <th class="p-3">ID</th>
+                                    <th class="p-3">Timestamp</th>
+                                    <th class="p-3">Type</th>
+                                    <th class="p-3">Severity</th>
+                                    <th class="p-3">Status</th>
+                                    <th class="p-3">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="alerts-table-body">
+                                <!-- Alerts will be dynamically inserted here -->
+                                <tr><td colspan="6" class="text-center p-8 text-gray-500">No active incidents. Monitoring...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
 
-            <!-- Bottom Row: Analysis & Monitoring -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
-                <!-- Left: Threat Statistics & Performance -->
-                <div class="flex flex-col gap-4 min-h-[350px]">
-                    <div class="card p-4 sm:p-6 flex-1 flex flex-col min-h-[170px] max-h-[350px] overflow-auto">
-                        <h2 class="text-lg font-semibold text-white flex items-center mb-3">
-                            <i class="fas fa-chart-bar mr-2 text-blue-400"></i>
-                            Threat Statistics
+            <!-- Right Column: Details, Logs, Chart -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Real-time Analytics Chart -->
+                <div class="card p-4 sm:p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-white flex items-center">
+                            <i class="fas fa-chart-area mr-3 text-green-400"></i>
+                            Real-time Analytics
                         </h2>
-                        <div id="threat-stats" class="text-sm flex-1">
-                            <!-- Threat statistics will be populated by JavaScript -->
+                        <div class="flex space-x-2">
+                            <button class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs">
+                                <i class="fas fa-play mr-1"></i>Live
+                            </button>
                         </div>
                     </div>
-                    <div class="card p-4 sm:p-6 flex-1 flex flex-col min-h-[170px] max-h-[350px] overflow-auto">
-                        <h2 class="text-lg font-semibold text-white flex items-center mb-3">
-                            <i class="fas fa-tachometer-alt mr-2 text-purple-400"></i>
-                            Performance Metrics
-                        </h2>
-                        <div id="performance-metrics" class="text-sm flex-1">
-                            <!-- Performance metrics will be populated by JavaScript -->
-                        </div>
+                    <div class="h-64 bg-gray-900 rounded-lg p-4">
+                        <canvas id="threatChart" width="400" height="200"></canvas>
                     </div>
                 </div>
 
-                <!-- Center: Active Incidents -->
-                <div class="flex flex-col min-h-[350px]">
-                    <div class="card p-4 sm:p-6 flex-1 flex flex-col min-h-[350px] max-h-[700px] overflow-auto">
-                        <div class="flex items-center justify-between mb-4">
-                            <h2 class="text-xl font-semibold text-white flex items-center">
-                                <i class="fas fa-fire mr-3 text-orange-400"></i>
-                                Active Incidents
-                            </h2>
+                <!-- System Health -->
+                <div class="card p-4 sm:p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-white flex items-center">
+                        <i class="fas fa-heartbeat mr-3 text-green-400"></i>
+                        System Health
+                    </h2>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-300">CPU Usage</span>
                             <div class="flex items-center space-x-2">
-                                <span id="incident-count" class="text-sm text-orange-400 font-medium">0 Active</span>
-                                <div class="flex space-x-1">
-                                    <button class="bg-red-600 text-white px-2 py-1 rounded text-xs filter-btn" data-severity="High">High</button>
-                                    <button class="bg-orange-600 text-white px-2 py-1 rounded text-xs filter-btn" data-severity="Medium">Medium</button>
-                                    <button class="bg-yellow-600 text-white px-2 py-1 rounded text-xs filter-btn" data-severity="Low">Low</button>
-                                    <button class="bg-gray-600 text-white px-2 py-1 rounded text-xs filter-btn" data-severity="All">All</button>
+                                <div class="w-20 bg-gray-700 rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full" style="width: 35%"></div>
                                 </div>
+                                <span class="text-sm text-green-400">35%</span>
                             </div>
                         </div>
-                        <div id="incidents-list" class="space-y-3 max-h-96 overflow-y-auto flex-1">
-                            <!-- Incident items will be populated by JavaScript -->
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-300">Memory Usage</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-20 bg-gray-700 rounded-full h-2">
+                                    <div class="bg-yellow-500 h-2 rounded-full" style="width: 68%"></div>
+                                </div>
+                                <span class="text-sm text-yellow-400">68%</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-300">Network I/O</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-20 bg-gray-700 rounded-full h-2">
+                                    <div class="bg-blue-500 h-2 rounded-full" style="width: 42%"></div>
+                                </div>
+                                <span class="text-sm text-blue-400">42%</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-300">Storage</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-20 bg-gray-700 rounded-full h-2">
+                                    <div class="bg-red-500 h-2 rounded-full" style="width: 85%"></div>
+                                </div>
+                                <span class="text-sm text-red-400">85%</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right: Incident Details & Live Stream -->
-                <div class="flex flex-col gap-4 min-h-[350px]">
-                    <div id="alert-details-panel" class="card p-4 sm:p-6 flex-1 flex flex-col min-h-[170px] max-h-[350px] overflow-auto">
-                        <h2 class="text-lg font-semibold mb-3 text-white flex items-center">
-                            <i class="fas fa-info-circle mr-2 text-blue-400"></i>
-                            Incident Details
-                        </h2>
-                        <div id="alert-details-content" class="text-gray-400 text-sm flex-1">
-                            <div class="text-center py-6">
-                                <i class="fas fa-mouse-pointer text-3xl text-gray-600 mb-3"></i>
-                                <p class="text-xs">Select an incident from the list to view details.</p>
-                            </div>
+                <!-- Alert Details -->
+                <div id="alert-details-panel" class="card p-4 sm:p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-white flex items-center">
+                        <i class="fas fa-info-circle mr-3 text-blue-400"></i>
+                        Incident Details
+                    </h2>
+                    <div id="alert-details-content" class="text-gray-400">
+                        <div class="text-center py-8">
+                            <i class="fas fa-mouse-pointer text-4xl text-gray-600 mb-4"></i>
+                            <p>Select an incident from the list to view details.</p>
                         </div>
                     </div>
-                    <div class="card p-4 sm:p-6 flex-1 flex flex-col min-h-[170px] max-h-[350px] overflow-auto">
-                        <div class="flex items-center justify-between mb-3">
-                            <h2 class="text-lg font-semibold text-white flex items-center">
-                                <i class="fas fa-stream mr-2 text-purple-400"></i>
-                                Live Event Stream
-                            </h2>
-                            <div class="flex items-center space-x-2">
-                                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                                <span class="text-xs text-green-400">Live</span>
-                            </div>
+                </div>
+
+                <!-- Live Log Feed -->
+                <div class="card p-4 sm:p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-white flex items-center">
+                            <i class="fas fa-stream mr-3 text-purple-400"></i>
+                            Live Event Stream
+                        </h2>
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                            <span class="text-xs text-green-400">Live</span>
                         </div>
-                        <div id="log-feed" class="log-feed h-64 overflow-y-auto bg-gray-900 rounded-md p-3 space-y-1 text-xs flex-1">
-                            <!-- Logs will be dynamically inserted here -->
-                        </div>
+                    </div>
+                    <div id="log-feed" class="log-feed h-80 overflow-y-auto bg-gray-900 rounded-md p-3 space-y-1">
+                        <!-- Logs will be dynamically inserted here -->
                     </div>
                 </div>
             </div>
@@ -782,7 +602,16 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // 'More' menu removed — no wiring required
+            // Toggle More menu
+            const moreBtn = document.getElementById('moreBtn');
+            const moreMenu = document.getElementById('moreMenu');
+            if (moreBtn && moreMenu) {
+                moreBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    moreMenu.classList.toggle('hidden');
+                });
+                document.addEventListener('click', () => moreMenu.classList.add('hidden'));
+            }
             // Toast utility
             function showToast(msg, type = 'info') {
                 const toast = document.createElement('div');
@@ -1057,7 +886,7 @@
                 ];
 
                 try {
-                    const GROQ_API_KEY = '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';
+                    const GROQ_API_KEY = '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';
                     const url = 'https://api.groq.com/openai/v1/chat/completions';
                     addTyping();
                     const resp = await fetch(url, {
@@ -1208,12 +1037,7 @@
                     modes: { grab: { distance: 400, line_linked: { opacity: 1 } }, bubble: { distance: 400, size: 40, duration: 2, opacity: 8, speed: 3 }, repulse: { distance: 200, duration: 0.4 }, push: { particles_nb: 4 }, remove: { particles_nb: 2 } }
                 },
                 retina_detect: true
-                });
-
-                // Load shared particles initializer (kept for backward compatibility)
-                var s = document.createElement('script');
-                s.src = 'assets/particles-init.js';
-                document.head.appendChild(s);
+            });
 
             // --- DOM Elements ---
             const totalEventsEl = document.getElementById('total-events');
@@ -1711,173 +1535,5 @@
             }, 2000); // Process security events every 2 seconds automatically
         });
     </script>
-    <script src="assets/button-functionality.js"></script>
-    <script src="assets/chatbot.js"></script>
 </body>
-<script>
-    // Sidebar Controller (static HTML)
-    (function() {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebar-overlay');
-        const mobileToggle = document.getElementById('sidebar-mobile-toggle');
-        const closeBtn = document.getElementById('sidebar-close');
-        const collapseTop = document.getElementById('sidebar-collapse-toggle');
-        const collapseBottom = document.getElementById('sidebar-collapse-toggle-bottom');
-        const main = document.getElementById('main-container');
-        const STORAGE_KEY = 'smartsoc.sidebar.collapsed';
-
-        // Initialize: desktop collapsed state
-        let collapsed = false;
-        try {
-            const persisted = localStorage.getItem(STORAGE_KEY);
-            if (persisted !== null) collapsed = persisted === 'true';
-        } catch (e) {}
-
-        function applyCollapsedState() {
-            const isDesktop = window.innerWidth >= 1024;
-            if (isDesktop) {
-                document.body.classList.add('desktop-with-sidebar');
-                document.body.classList.toggle('desktop-with-sidebar-collapsed', collapsed);
-                sidebar.classList.toggle('collapsed', collapsed);
-                // Update ARIA and chevrons
-                const topIcon = document.getElementById('sidebar-collapse-icon-top');
-                const botIcon = document.getElementById('sidebar-collapse-icon-bottom');
-                const expanded = !collapsed;
-                collapseTop && collapseTop.setAttribute('aria-expanded', String(expanded));
-                collapseBottom && collapseBottom.setAttribute('aria-expanded', String(expanded));
-                if (topIcon) topIcon.className = expanded ? 'fas fa-angle-left' : 'fas fa-angle-right';
-                if (botIcon) botIcon.className = expanded ? 'fas fa-angle-left' : 'fas fa-angle-right';
-            } else {
-                document.body.classList.remove('desktop-with-sidebar');
-                document.body.classList.remove('desktop-with-sidebar-collapsed');
-                sidebar.classList.remove('collapsed');
-            }
-        }
-
-        function setCollapsed(next) {
-            collapsed = next;
-            try { localStorage.setItem(STORAGE_KEY, String(collapsed)); } catch (e) {}
-            applyCollapsedState();
-        }
-
-        // Mobile open/close
-        function openMobile() {
-            sidebar.classList.remove('-translate-x-full');
-            overlay.classList.remove('hidden');
-            document.body.classList.add('sidebar-modal-open');
-            mobileToggle && mobileToggle.setAttribute('aria-expanded', 'true');
-            // Focus trap entry: move focus to close button if available
-            closeBtn && closeBtn.focus && closeBtn.focus();
-        }
-        function closeMobile() {
-            sidebar.classList.add('-translate-x-full');
-            overlay.classList.add('hidden');
-            document.body.classList.remove('sidebar-modal-open');
-            mobileToggle && mobileToggle.setAttribute('aria-expanded', 'false');
-            // Return focus to opener for accessibility
-            mobileToggle && mobileToggle.focus && mobileToggle.focus();
-        }
-
-        mobileToggle && mobileToggle.addEventListener('click', openMobile);
-        overlay && overlay.addEventListener('click', closeMobile);
-        closeBtn && closeBtn.addEventListener('click', closeMobile);
-
-        // Collapse toggles (desktop)
-        function toggleCollapse() { setCollapsed(!collapsed); }
-        collapseTop && collapseTop.addEventListener('click', toggleCollapse);
-        collapseBottom && collapseBottom.addEventListener('click', toggleCollapse);
-
-        // Keyboard: Escape closes mobile sidebar
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' || e.key === 'Esc') {
-                if (window.innerWidth < 1024 && !sidebar.classList.contains('-translate-x-full')) {
-                    closeMobile();
-                }
-            }
-        });
-
-        // Active link highlighting based on current path
-        function markActiveLinks() {
-            const links = sidebar.querySelectorAll('nav a');
-            const current = location.pathname.split('/').pop();
-            links.forEach((a) => {
-                const href = a.getAttribute('href') || '';
-                const file = href.split('/').pop();
-                const isActive = file === '' ? current === '' : current === file;
-                a.classList.toggle('bg-slate-800', isActive);
-                a.classList.toggle('text-white', isActive);
-                // Left accent bar
-                a.style.boxShadow = isActive ? 'inset 3px 0 0 0 rgb(99 102 241)' : '';
-            });
-        }
-
-        // Initial setup
-        function init() {
-            if (window.innerWidth >= 1024) {
-                sidebar.classList.remove('-translate-x-full');
-                overlay.classList.add('hidden');
-            } else {
-                // Ensure mobile starts uncollapsed layout
-                document.body.classList.remove('desktop-with-sidebar');
-                document.body.classList.remove('desktop-with-sidebar-collapsed');
-                sidebar.classList.remove('collapsed');
-            }
-            applyCollapsedState();
-            markActiveLinks();
-        }
-        init();
-
-        // Active link highlighting
-        (function markActiveLinks(){
-            const links = sidebar.querySelectorAll('nav a');
-            const current = location.pathname.split('/').pop();
-            links.forEach(a => {
-                const href = a.getAttribute('href') || '';
-                const file = href.split('/').pop();
-                const isActive = file === '' ? current === '' : current === file;
-                a.classList.toggle('active', isActive);
-                if (isActive) {
-                    a.style.boxShadow = 'inset 3px 0 0 0 rgb(99 102 241)';
-                    a.classList.add('text-white');
-                    a.classList.add('bg-slate-800');
-                }
-            });
-        })();
-        // Keyboard navigation and collapsed tooltips
-        (function enhanceA11y(){
-            const navLinks = Array.from(sidebar.querySelectorAll('nav a'));
-            sidebar.addEventListener('keydown', (e) => {
-                if (!['ArrowDown','ArrowUp','Home','End'].includes(e.key)) return;
-                const active = document.activeElement;
-                const idx = navLinks.indexOf(active);
-                let nextIdx = idx;
-                if (e.key === 'ArrowDown') nextIdx = Math.min(navLinks.length-1, idx + 1);
-                if (e.key === 'ArrowUp') nextIdx = Math.max(0, idx - 1);
-                if (e.key === 'Home') nextIdx = 0;
-                if (e.key === 'End') nextIdx = navLinks.length - 1;
-                if (nextIdx !== idx && navLinks[nextIdx]) {
-                    e.preventDefault();
-                    navLinks[nextIdx].focus();
-                }
-            });
-            function syncCollapsedTooltips() {
-                const isCollapsed = sidebar.classList.contains('sidebar-collapsed') && window.innerWidth >= 1024;
-                navLinks.forEach(a => {
-                    const label = (a.textContent || '').trim();
-                    if (isCollapsed) a.setAttribute('title', label);
-                    else a.removeAttribute('title');
-                });
-            }
-            syncCollapsedTooltips();
-            window.addEventListener('resize', syncCollapsedTooltips);
-        })();
-
-        window.addEventListener('resize', applyCollapsedState);
-    })();
-
-</script>
-
-<!-- Load threat simulation engine -->
-<script src="assets/threat-simulator.js"></script>
-<script src="assets/threat-map.js"></script>
 </html>

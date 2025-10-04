@@ -7,6 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/styles.css">
+    <link rel="stylesheet" href="assets/shared-buttons.css">
+    <link rel="stylesheet" href="assets/chatbot.css">
     <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%); color: #d1d5db; }
@@ -71,8 +74,45 @@
     </script>
 </head>
 <body class="p-6">
+    <!-- Sidebar -->
+    <button id="sidebar-mobile-toggle" class="lg:hidden fixed top-3 left-3 z-50 inline-flex items-center justify-center rounded-md p-2 text-slate-200 bg-slate-900/90 border border-slate-800 hover:bg-slate-800 transition" aria-label="Open sidebar">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div id="sidebar-overlay" class="hidden lg:hidden fixed inset-0 z-40 bg-black/40"></div>
+    <aside id="sidebar" class="fixed z-50 top-0 left-0 h-screen bg-slate-900 text-slate-200 border-r border-slate-800 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
+        <div class="flex items-center justify-between px-4 py-4 border-b border-slate-800">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-inner">◆</div>
+                <span class="text-sm font-semibold truncate hidden sm:block">SmartSOC </span>
+            </div>
+            <button id="sidebar-collapse-toggle" class="hidden lg:inline-flex items-center justify-center rounded-md p-2 text-slate-300 hover:bg-slate-800 transition" aria-label="Collapse sidebar">
+                <i class="fas fa-angle-left"></i>
+            </button>
+            <button id="sidebar-close" class="lg:hidden inline-flex items-center justify-center rounded-md p-2 text-slate-300 hover:bg-slate-800 transition" aria-label="Close sidebar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <nav class="px-2 py-3 overflow-y-auto h-[calc(100vh-3.25rem)]">
+            <ul class="space-y-1">
+                <li><a href="index.html" class="group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors"><i class="fas fa-gauge-high w-5 text-slate-400"></i><span class="truncate text-sm font-medium">Dashboard</span></a></li>
+                <li><a href="threat-detection.html" class="group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors"><i class="fas fa-triangle-exclamation w-5 text-slate-400"></i><span class="truncate text-sm font-medium">Threat Detection</span></a></li>
+                <li><a href="cases.html" class="group relative flex items-center gap-3 rounded-md px-3 py-2 text-white bg-slate-800 transition-colors" style="box-shadow: inset 3px 0 0 0 rgb(99 102 241)"><i class="fas fa-fire w-5"></i><span class="truncate text-sm font-medium">Incidents</span></a></li>
+                <li><a href="threat-intel.html" class="group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors"><i class="fas fa-brain w-5 text-slate-400"></i><span class="truncate text-sm font-medium">Threat Intel</span></a></li>
+                <li><a href="analytics.html" class="group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors"><i class="fas fa-chart-line w-5 text-slate-400"></i><span class="truncate text-sm font-medium">Analytics</span></a></li>
+                <li><a href="playbooks.html" class="group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors"><i class="fas fa-diagram-project w-5 text-slate-400"></i><span class="truncate text-sm font-medium">Automation Playbooks</span></a></li>
+                <li><a href="assets.html" class="group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors"><i class="fas fa-users w-5 text-slate-400"></i><span class="truncate text-sm font-medium">Users</span></a></li>
+                <li><a href="settings.html" class="group relative flex items-center gap-3 rounded-md px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors"><i class="fas fa-gear w-5 text-slate-400"></i><span class="truncate text-sm font-medium">Settings</span></a></li>
+            </ul>
+        </nav>
+        <div class="hidden lg:flex absolute bottom-0 left-0 right-0 p-2 border-t border-slate-800">
+            <button id="sidebar-collapse-toggle-bottom" class="w-full inline-flex items-center justify-center gap-2 rounded-md px-2 py-2 text-xs text-slate-300 hover:bg-slate-800 transition">
+                <i class="fas fa-angle-left"></i>
+                <span>Collapse</span>
+            </button>
+        </div>
+    </aside>
     <div id="particles-js" style="position:fixed; inset:0; z-index:-1"></div>
-    <div class="max-w-6xl mx-auto">
+    <div id="main-container" class="max-w-6xl mx-auto">
         <header class="flex justify-between items-center mb-6">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -114,6 +154,46 @@
             </table>
         </div>
     </div>
+<script>
+    (function(){
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const mobileToggle = document.getElementById('sidebar-mobile-toggle');
+        const closeBtn = document.getElementById('sidebar-close');
+        const collapseTop = document.getElementById('sidebar-collapse-toggle');
+        const collapseBottom = document.getElementById('sidebar-collapse-toggle-bottom');
+        const STORAGE_KEY = 'smartsoc.sidebar.collapsed';
+        let collapsed = false;
+        try { const persisted = localStorage.getItem(STORAGE_KEY); if (persisted !== null) collapsed = persisted === 'true'; } catch(e) {}
+        function applyCollapsedState(){
+            const isDesktop = window.innerWidth >= 1024;
+            if (isDesktop) {
+                document.body.classList.add('desktop-with-sidebar');
+                document.body.classList.toggle('desktop-with-sidebar-collapsed', collapsed);
+                sidebar.classList.toggle('collapsed', collapsed);
+            } else {
+                document.body.classList.remove('desktop-with-sidebar');
+                document.body.classList.remove('desktop-with-sidebar-collapsed');
+                sidebar.classList.remove('collapsed');
+            }
+        }
+        function setCollapsed(next){ collapsed = next; try{localStorage.setItem(STORAGE_KEY, String(collapsed));}catch(e){} applyCollapsedState(); }
+        function openMobile(){ sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); }
+        function closeMobile(){ sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); }
+        mobileToggle && mobileToggle.addEventListener('click', openMobile);
+        overlay && overlay.addEventListener('click', closeMobile);
+        closeBtn && closeBtn.addEventListener('click', closeMobile);
+        const toggle = ()=> setCollapsed(!collapsed);
+        collapseTop && collapseTop.addEventListener('click', toggle);
+        collapseBottom && collapseBottom.addEventListener('click', toggle);
+        function init(){ if (window.innerWidth >= 1024){ sidebar.classList.remove('-translate-x-full'); overlay.classList.add('hidden'); } applyCollapsedState(); }
+        init();
+        window.addEventListener('resize', applyCollapsedState);
+    })();
+</script>
+    <script src="assets/particles-init.js"></script>
+    <script src="assets/button-functionality.js"></script>
+    <script src="assets/chatbot.js"></script>
 </body>
 </html>
 
