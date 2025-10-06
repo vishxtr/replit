@@ -398,22 +398,22 @@ class ThreatSimulator {
         const statsElement = document.getElementById('threat-stats');
         if (statsElement) {
             statsElement.innerHTML = `
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-red-900/30 border border-red-500/30 rounded-lg p-4">
-                        <div class="text-red-400 text-sm font-medium">Active Threats</div>
-                        <div class="text-2xl font-bold text-white">${this.threats.filter(t => t.status === 'Active').length}</div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div class="bg-red-900/30 border border-red-500/30 rounded-xl p-6 text-center hover:bg-red-900/40 transition-all duration-300">
+                        <div class="text-red-400 text-base font-semibold mb-3">Active Threats</div>
+                        <div class="text-4xl font-bold text-white">${this.threats.filter(t => t.status === 'Active').length}</div>
                     </div>
-                    <div class="bg-green-900/30 border border-green-500/30 rounded-lg p-4">
-                        <div class="text-green-400 text-sm font-medium">Blocked</div>
-                        <div class="text-2xl font-bold text-white">${this.stats.blockedThreats}</div>
+                    <div class="bg-green-900/30 border border-green-500/30 rounded-xl p-6 text-center hover:bg-green-900/40 transition-all duration-300">
+                        <div class="text-green-400 text-base font-semibold mb-3">Blocked</div>
+                        <div class="text-4xl font-bold text-white">${this.stats.blockedThreats}</div>
                     </div>
-                    <div class="bg-yellow-900/30 border border-yellow-500/30 rounded-lg p-4">
-                        <div class="text-yellow-400 text-sm font-medium">Incidents</div>
-                        <div class="text-2xl font-bold text-white">${this.stats.activeIncidents}</div>
+                    <div class="bg-yellow-900/30 border border-yellow-500/30 rounded-xl p-6 text-center hover:bg-yellow-900/40 transition-all duration-300">
+                        <div class="text-yellow-400 text-base font-semibold mb-3">Incidents</div>
+                        <div class="text-4xl font-bold text-white">${this.stats.activeIncidents}</div>
                     </div>
-                    <div class="bg-blue-900/30 border border-blue-500/30 rounded-lg p-4">
-                        <div class="text-blue-400 text-sm font-medium">Response Time</div>
-                        <div class="text-2xl font-bold text-white">${Math.floor(Math.random() * 5) + 2}s</div>
+                    <div class="bg-blue-900/30 border border-blue-500/30 rounded-xl p-6 text-center hover:bg-blue-900/40 transition-all duration-300">
+                        <div class="text-blue-400 text-base font-semibold mb-3">Response Time</div>
+                        <div class="text-4xl font-bold text-white">${Math.floor(Math.random() * 5) + 2}s</div>
                     </div>
                 </div>
             `;
@@ -477,19 +477,19 @@ class ThreatSimulator {
             metricsElement.innerHTML = `
                 <div class="grid grid-cols-2 gap-4">
                     <div class="text-center">
-                        <div class="text-2xl font-bold text-white">${responseTime}ms</div>
+                        <div class="text-2xl font-bold text-white mb-1">${responseTime}ms</div>
                         <div class="text-xs text-gray-400">Avg Response Time</div>
                     </div>
                     <div class="text-center">
-                        <div class="text-2xl font-bold text-white">${throughput}</div>
+                        <div class="text-2xl font-bold text-white mb-1">${throughput}</div>
                         <div class="text-xs text-gray-400">Requests/sec</div>
                     </div>
                     <div class="text-center">
-                        <div class="text-2xl font-bold text-white">${errorRate.toFixed(2)}%</div>
+                        <div class="text-2xl font-bold text-white mb-1">${errorRate.toFixed(2)}%</div>
                         <div class="text-xs text-gray-400">Error Rate</div>
                     </div>
                     <div class="text-center">
-                        <div class="text-2xl font-bold text-white">${availability.toFixed(2)}%</div>
+                        <div class="text-2xl font-bold text-white mb-1">${availability.toFixed(2)}%</div>
                         <div class="text-xs text-gray-400">Uptime</div>
                     </div>
                 </div>
@@ -519,12 +519,36 @@ class ThreatSimulator {
             
             feedElement.insertBefore(threatElement, feedElement.firstChild);
             
-            // Keep only last 20 threats in feed
+            // Show "Show More" button if more than 5 threats
             const threats = feedElement.children;
+            const showMoreBtn = document.getElementById('threat-feed-show-more');
+            if (threats.length > 5 && showMoreBtn) {
+                showMoreBtn.classList.remove('hidden');
+            }
+            
+            // Hide threats beyond the first 5 initially
+            this.updateThreatFeedVisibility();
+            
+            // Keep only last 20 threats in feed
             if (threats.length > 20) {
                 feedElement.removeChild(threats[threats.length - 1]);
             }
         }
+    }
+
+    updateThreatFeedVisibility() {
+        const feedElement = document.getElementById('threat-feed');
+        const threats = feedElement.children;
+        const showMoreBtn = document.getElementById('show-more-threats');
+        const isExpanded = showMoreBtn && showMoreBtn.textContent.includes('Show Less');
+        
+        threats.forEach((threat, index) => {
+            if (index >= 5 && !isExpanded) {
+                threat.style.display = 'none';
+            } else {
+                threat.style.display = 'block';
+            }
+        });
     }
 
     updateThreatMap(threat) {
@@ -559,31 +583,69 @@ class ThreatSimulator {
     updateIncidentList(incident) {
         const incidentsElement = document.getElementById('incidents-list');
         if (incidentsElement) {
+            // Clear the empty state message if it exists
+            const emptyState = incidentsElement.querySelector('.text-center');
+            if (emptyState) {
+                emptyState.remove();
+            }
+            
             const incidentElement = document.createElement('div');
-            incidentElement.className = `p-4 border border-gray-700 rounded-lg mb-3 bg-gray-800/50`;
+            incidentElement.className = `p-6 border border-gray-700 rounded-xl mb-4 bg-gray-800/50 hover:bg-gray-800/70 transition-all duration-300`;
             incidentElement.innerHTML = `
-                <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center space-x-2">
-                        <span class="text-sm font-medium text-white">${incident.title}</span>
-                        <span class="text-xs px-2 py-1 rounded ${this.getSeverityBadge(incident.severity)}">${incident.severity}</span>
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg font-semibold text-white">${incident.title}</span>
+                        <span class="text-sm px-3 py-1 rounded-full ${this.getSeverityBadge(incident.severity)} font-semibold">${incident.severity}</span>
                     </div>
-                    <span class="text-xs text-gray-400">${incident.createdAt.toLocaleTimeString()}</span>
+                    <span class="text-sm text-gray-400 font-medium">${incident.createdAt.toLocaleTimeString()}</span>
                 </div>
-                <div class="text-sm text-gray-300 mb-2">${incident.description}</div>
+                <div class="text-base text-gray-300 mb-4 leading-relaxed">${incident.description}</div>
                 <div class="flex items-center justify-between">
-                    <span class="text-xs text-gray-400">Assigned to: ${incident.assignedTo}</span>
-                    <span class="text-xs px-2 py-1 rounded bg-blue-900/30 text-blue-400">${incident.status}</span>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-400">Assigned to: <span class="text-blue-400 font-semibold">${incident.assignedTo}</span></span>
+                        <span class="text-sm text-gray-400">Priority: <span class="text-yellow-400 font-semibold">${incident.severity}</span></span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm px-3 py-1 rounded-full bg-blue-900/30 text-blue-400 font-semibold">${incident.status}</span>
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors">
+                            <i class="fas fa-eye mr-1"></i>View
+                        </button>
+                    </div>
                 </div>
             `;
             
             incidentsElement.insertBefore(incidentElement, incidentsElement.firstChild);
             
-            // Keep only last 10 incidents
+            // Show "Show More" button if more than 5 incidents
             const incidents = incidentsElement.children;
-            if (incidents.length > 10) {
+            const showMoreBtn = document.getElementById('incidents-show-more');
+            if (incidents.length > 5 && showMoreBtn) {
+                showMoreBtn.classList.remove('hidden');
+            }
+            
+            // Hide incidents beyond the first 5 initially
+            this.updateIncidentVisibility();
+            
+            // Keep only last 15 incidents
+            if (incidents.length > 15) {
                 incidentsElement.removeChild(incidents[incidents.length - 1]);
             }
         }
+    }
+
+    updateIncidentVisibility() {
+        const incidentsElement = document.getElementById('incidents-list');
+        const incidents = incidentsElement.children;
+        const showMoreBtn = document.getElementById('show-more-incidents');
+        const isExpanded = showMoreBtn && showMoreBtn.textContent.includes('Show Less');
+        
+        incidents.forEach((incident, index) => {
+            if (index >= 5 && !isExpanded) {
+                incident.style.display = 'none';
+            } else {
+                incident.style.display = 'block';
+            }
+        });
     }
 
     getRandomAttacker() {
