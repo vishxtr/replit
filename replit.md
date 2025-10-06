@@ -1,37 +1,52 @@
-# SmartSOC IR - AI-Powered Security Operations Center
+# PhishGuard AI - Real-Time Phishing Detection System
 
 ## Project Overview
-SmartSOC IR is a comprehensive security operations center dashboard showcasing advanced AI-powered threat detection, real-time analytics, and automated incident response capabilities.
+PhishGuard AI is a **frontend-only simulation** of a production-grade AI-powered phishing detection and prevention system. This hackathon-ready demo showcases advanced threat detection, real-time analytics, and AI-powered analysis without requiring any backend infrastructure.
+
+## ⚡ Hackathon Demo Version
+This version runs entirely on the frontend using React, Vite, TailwindCSS, and Recharts:
+- ✅ No backend required - fully client-side
+- ✅ All data, alerts, graphs, and AI outputs are simulated
+- ✅ Looks fully functional and enterprise-ready
+- ✅ Lightweight and safe for live demos
+- ✅ Runs directly in Replit web view
 
 ## Architecture
-This is a hybrid web application with:
-- **Frontend**: Static HTML/CSS/JavaScript files (landing.html, index.html, analytics.html)
-- **Backend API**: FastAPI server providing REST endpoints
-- **Server**: Unified Flask server that serves static files and proxies API requests
-
-## Tech Stack
-- **Frontend**: HTML5, CSS3, JavaScript (ES6+), Tailwind CSS, Chart.js, Particles.js
-- **Backend**: FastAPI, Python 3.11
-- **Server**: Flask (development), Uvicorn (FastAPI backend)
-- **ML/Data**: scikit-learn, pandas, numpy
+**Frontend-Only React Application:**
+- **Framework**: React 18 + Vite
+- **Styling**: TailwindCSS with custom dark mode theme
+- **Animations**: Framer Motion
+- **Charts**: Recharts (Line & Pie charts)
+- **Icons**: Lucide React
+- **UI Components**: Radix UI primitives
 
 ## Project Structure
 ```
-SmartSOC IR/
-├── index.html              # Main SOC Dashboard
-├── landing.html            # Landing Page (default)
-├── analytics.html          # Analytics Dashboard
-├── assets/                 # Static assets (CSS, JS)
-├── backend/                # FastAPI backend
-│   ├── server.py          # Main FastAPI app
-│   ├── alerts.py          # Alerts API
-│   ├── chat.py            # Chat/AI Assistant API
-│   ├── remediate.py       # Remediation API
-│   └── simulate.py        # Threat Simulation API
-├── ui/                    # Streamlit UI (alternative)
-├── phishing_module/       # Phishing detection module
-├── start_server.py        # Unified server entry point
-└── requirements.txt       # Python dependencies
+PhishGuard AI/
+├── frontend/                   # Main React application
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Dashboard.jsx          # Live stats dashboard
+│   │   │   ├── AlertsTable.jsx        # Real-time alerts feed
+│   │   │   ├── Analyzer.jsx           # AI text analyzer
+│   │   │   ├── ThreatGraph.jsx        # Domain network graph
+│   │   │   ├── TrendCharts.jsx        # Activity charts
+│   │   │   ├── ExplainPanel.jsx       # AI explanations modal
+│   │   │   └── SystemStatus.jsx       # System health panel
+│   │   ├── data/
+│   │   │   └── sample_alerts.json     # Initial seed data
+│   │   ├── utils/
+│   │   │   └── fakeData.js            # Data generators
+│   │   ├── App.jsx                     # Main app container
+│   │   ├── main.jsx                    # Entry point
+│   │   └── index.css                   # Global styles
+│   ├── index.html
+│   ├── package.json
+│   ├── vite.config.js
+│   └── tailwind.config.js
+├── backend/                    # (Legacy - not used)
+├── phishing_module/            # (Legacy - not used)
+└── replit.md
 ```
 
 ## Running the Application
@@ -39,44 +54,113 @@ SmartSOC IR/
 ### Development
 The application runs automatically via the configured workflow:
 ```bash
-python start_server.py
+cd frontend && npm run dev
 ```
 
-This starts:
-- Flask server on port 5000 (serves static files)
-- FastAPI backend on port 8000 (API endpoints)
+The Vite dev server starts on port 5000 and is accessible through Replit's web view.
 
 ### Accessing the Application
-- **Landing Page**: http://localhost:5000/ or /landing.html
-- **Main Dashboard**: http://localhost:5000/index.html
-- **Analytics**: http://localhost:5000/analytics.html
+- **Main App**: Opens automatically in Replit web view
+- **Local**: http://localhost:5000/
 
-## API Endpoints
-The FastAPI backend provides:
-- `GET /api/alerts` - Get all security alerts
-- `GET /api/alerts/{id}` - Get specific alert details
-- `POST /api/chat` - Chat with AI assistant
-- `POST /api/remediate/{id}` - Get remediation suggestions
-- `GET /api/simulate/*` - Threat simulation endpoints
+## Core Features
 
-## Features
-- Real-time threat detection and monitoring
-- Interactive AI security assistant
-- Advanced analytics and visualization
-- Geographic threat mapping
-- Automated incident response
-- Live event streaming
+### 1. Live Dashboard
+- Active Phishing Alerts counter
+- Links Scanned (auto-incrementing)
+- Detection Accuracy display (97.8%)
+- Zero-Day Detections counter
+- Animated stat cards with progress bars
+
+### 2. Real-Time Alerts Feed
+- Auto-generates new phishing alerts every 4 seconds
+- Color-coded threat levels (High/Medium/Low)
+- AI confidence percentage bars
+- Realistic domain patterns (typosquatting simulation)
+- Detection type indicators
+- Interactive details view
+
+### 3. AI Email/SMS Analyzer
+- Text input for email/SMS content
+- Simulated AI analysis with 2-second processing animation
+- Detailed threat report with:
+  - Confidence percentage
+  - Detection reasons
+  - Recommended actions
+- Randomized but realistic responses
+
+### 4. Threat Network Map
+- SVG-based domain graph visualization
+- Animated node connections
+- Color-coded threat levels
+- Auto-refreshes every 8 seconds
+- Shows relationships between malicious domains
+
+### 5. Trend Analytics
+- Phishing activity line chart (time series)
+- Threat source distribution pie chart
+- Categories: Email, SMS, Web, AI-Generated
+
+### 6. Explainable AI Panel
+- Modal dialog for detailed threat analysis
+- AI-generated explanations
+- Threat indicators list
+- Security recommendations
+- Smooth animations and transitions
+
+### 7. System Status Monitor
+- Live CPU load simulation
+- Model uptime display (99.98%)
+- API latency monitoring
+- Threats blocked counter
+- AI model version info
+
+## Tech Implementation Details
+
+### Simulation Logic
+- **Auto-updating alerts**: Uses `setInterval()` to push new fake alerts every 4 seconds
+- **Random data generation**: Utility functions create realistic domains, threat levels, and confidence scores
+- **State management**: React hooks for all dynamic data
+- **No backend calls**: All data generated client-side
+
+### UI/UX Features
+- Dark mode theme with neon green/blue accents
+- Framer Motion animations for smooth transitions
+- Responsive grid layout
+- Glowing effects and animated indicators
+- Professional enterprise-grade design
+- Background grid pattern
+- Hover effects and interactive elements
+
+### Data Generators
+Located in `/frontend/src/utils/fakeData.js`:
+- `fakeDomain()` - Generates phishing domains with typosquatting
+- `fakeLevel()` - Random threat levels with realistic distribution
+- `generateAlert()` - Creates complete alert objects
+- `generateExplanation()` - AI explanation templates
+- `generateSystemStats()` - System health metrics
+- `generateGraphData()` - Network graph data
 
 ## Recent Changes
-- 2025-10-06: Initial Replit setup
-  - Configured Python 3.11 environment
-  - Installed all dependencies
-  - Created unified server (start_server.py)
-  - Configured workflow for automatic startup
-  - Set up deployment configuration (VM mode)
+- **2025-10-06: Frontend-Only Transformation**
+  - Migrated from hybrid Flask/FastAPI backend to pure React frontend
+  - Implemented React + Vite with TailwindCSS
+  - Created all simulation components from scratch
+  - Added Framer Motion animations
+  - Integrated Recharts for data visualization
+  - Configured workflow for automatic Vite dev server startup
+  - Removed backend dependencies
 
-## Notes
-- Frontend uses CDN resources (Tailwind, Chart.js, Particles.js)
-- Some JavaScript warnings exist in browser console (existing in original code)
-- Backend API uses mock data for demonstration purposes
-- Gemini API key is embedded in chat.py (should be moved to secrets for production)
+## Development Notes
+- All alerts and data are simulated using mock generators
+- No external API calls or backend services
+- Console log shows: `[PhishGuard AI] Model v3.2 loaded | Live threat monitoring initialized | Confidence threshold: 0.97`
+- Perfect for hackathon presentations and demos
+- Can be easily deployed to static hosting (Vercel, Netlify, etc.)
+
+## User Preferences
+- Clean, modern dark mode UI
+- Professional enterprise aesthetics
+- Real-time visual updates
+- Interactive components
+- No backend complexity
