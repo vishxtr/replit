@@ -7,7 +7,6 @@ class SmartSOCChatbot {
         this.chatbotHistory = [];
         this.chatbotBusy = false;
         this.CHAT_HISTORY_KEY = 'smartsoc_chat_history_v1';
-        this.GROQ_API_KEY = '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';
         
         this.init();
     }
@@ -277,36 +276,18 @@ class SmartSOCChatbot {
         if (this.chatbotBusy) return;
         this.chatbotBusy = true;
 
-        const systemPrompt = 'You are the SmartSOC Assistant embedded in the Smart SOC Incident Response System (SmartSOC IRS). You help security analysts with SOC operations: interpreting alerts, incident triage, phishing analysis, threat intelligence, and safe remediation guidance. If asked about yourself, say you are the SmartSOC Assistant integrated into this app and currently powered by Groq. Respond in clean, ChatGPT-style markdown with short headings (##/###), bold labels, concise bullet points, and numbered steps for playbooks. Keep responses concise, accurate, and action-oriented. Avoid giving instructions that could enable harm. When information is missing, ask a brief clarifying question before proceeding. Where helpful, include concrete next steps.';
-        
-        const maxTurns = 10;
-        const recentTurns = this.chatbotHistory.slice(-maxTurns).map(m => ({ 
-            role: m.role === 'assistant' ? 'assistant' : m.role, 
-            content: m.content 
-        }));
-        
-        const messages = [
-            { role: 'system', content: systemPrompt },
-            { role: 'system', content: this.buildSocContext() },
-            ...recentTurns,
-            { role: 'user', content: query }
-        ];
+        const contextEnhancedQuery = `${this.buildSocContext()}\n\nUser Question: ${query}`;
 
         try {
-            const url = 'https://api.groq.com/openai/v1/chat/completions';
             this.addTyping();
             
-            const resp = await fetch(url, {
+            const resp = await fetch('http://localhost:8000/api/chat', {
                 method: 'POST',
                 headers: { 
-                    'Content-Type': 'application/json', 
-                    'Authorization': 'Bearer ' + this.GROQ_API_KEY 
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: 'openai/gpt-oss-120b',
-                    messages,
-                    temperature: 0.6,
-                    max_tokens: 512
+                    query: contextEnhancedQuery
                 })
             });
 
@@ -314,7 +295,7 @@ class SmartSOCChatbot {
                 let msg = 'The AI service returned an error. Please try again.';
                 try {
                     const err = await resp.json();
-                    if (err && err.error && err.error.message) msg = err.error.message;
+                    if (err && err.error) msg = err.error;
                 } catch (_) {
                     const errText = await resp.text();
                     if (errText) msg = errText;
@@ -326,23 +307,18 @@ class SmartSOCChatbot {
             }
 
             const data = await resp.json();
-            let text = '';
-            if (data && Array.isArray(data.choices) && data.choices.length > 0) {
-                const msg = data.choices[0].message;
-                if (msg && typeof msg.content === 'string') text = msg.content;
-            }
+            let text = data.answer || 'Sorry, I could not get a response right now. Please try again.';
             
             this.removeTyping();
-            if (!text) text = 'Sorry, I could not get a response right now. Please try again.';
-            
             this.addChatMessage(text, 'bot');
+            this.chatbotHistory.push({ role: 'user', content: query });
             this.chatbotHistory.push({ role: 'assistant', content: text });
             this.saveChatHistory();
             
         } catch (error) {
             console.error('Chatbot request failed', error);
             this.removeTyping();
-            const errMsg = 'I\'m having trouble reaching the AI service. Please try again.';
+            const errMsg = 'I\'m having trouble reaching the AI service. Please check your connection and try again.';
             this.addChatMessage(errMsg, 'bot');
             this.chatbotHistory.push({ role: 'assistant', content: errMsg });
             this.saveChatHistory();
