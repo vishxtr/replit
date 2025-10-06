@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="assets/styles.css">
     <link rel="stylesheet" href="assets/shared-buttons.css">
     <link rel="stylesheet" href="assets/chatbot.css">
+    <script src="assets/master-functionality.js"></script>
     <style>
         :root {
             --sidebar-width: 16rem;
@@ -1116,59 +1117,42 @@
                 if (chatbotBusy) return;
                 chatbotBusy = true;
 
-                const systemPrompt = 'You are the SmartSOC Assistant embedded in the Smart SOC Incident Response System (SmartSOC IRS). You help security analysts with SOC operations: interpreting alerts, incident triage, phishing analysis, threat intelligence, and safe remediation guidance. If asked about yourself, say you are the SmartSOC Assistant integrated into this app and currently powered by Groq. Respond in clean, ChatGPT-style markdown with short headings (##/###), bold labels, concise bullet points, and numbered steps for playbooks. Keep responses concise, accurate, and action-oriented. Avoid giving instructions that could enable harm. When information is missing, ask a brief clarifying question before proceeding. Where helpful, include concrete next steps.';
-                const maxTurns = 10;
-                const recentTurns = chatbotHistory.slice(-maxTurns).map(m => ({ role: m.role === 'assistant' ? 'assistant' : m.role, content: m.content }));
-                const messages = [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'system', content: buildSocContext() },
-                    ...recentTurns,
-                    { role: 'user', content: query }
-                ];
+                const contextEnhancedQuery = `${buildSocContext()}\n\nUser Question: ${query}`;
 
                 try {
-                    const GROQ_API_KEY = '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';
-                    const url = 'https://api.groq.com/openai/v1/chat/completions';
                     addTyping();
-                    const resp = await fetch(url, {
+                    const resp = await fetch('http://localhost:8000/api/chat', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_API_KEY },
-                        body: JSON.stringify({
-                            model: 'openai/gpt-oss-120b',
-                            messages,
-                            temperature: 0.6,
-                            max_tokens: 512
-                        })
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query: contextEnhancedQuery })
                     });
+                    
                     if (!resp.ok) {
                         let msg = 'The AI service returned an error. Please try again.';
                         try {
                             const err = await resp.json();
-                            if (err && err.error && err.error.message) msg = err.error.message;
+                            if (err && err.error) msg = err.error;
                         } catch (_) {
                             const errText = await resp.text();
                             if (errText) msg = errText;
                         }
-                        console.error('Gemini error', resp.status, msg);
+                        console.error('Chat API error', resp.status, msg);
                         removeTyping();
                         addChatMessage(msg, 'bot');
                         return;
                     }
+                    
                     const data = await resp.json();
-                    let text = '';
-                    if (data && Array.isArray(data.choices) && data.choices.length > 0) {
-                        const msg = data.choices[0].message;
-                        if (msg && typeof msg.content === 'string') text = msg.content;
-                    }
+                    let text = data.answer || 'Sorry, I could not get a response right now. Please try again.';
+                    
                     removeTyping();
-                    if (!text) text = 'Sorry, I could not get a response right now. Please try again.';
                     addChatMessage(text, 'bot');
                     chatbotHistory.push({ role: 'assistant', content: text });
                     try { localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(chatbotHistory)); } catch (_) {}
                 } catch (e) {
-                    console.error('Gemini request failed', e);
+                    console.error('Chat request failed', e);
                     removeTyping();
-                    const errMsg = 'I\'m having trouble reaching the AI service. Please try again.';
+                    const errMsg = 'I\'m having trouble reaching the AI service. Please check your connection and try again.';
                     addChatMessage(errMsg, 'bot');
                     chatbotHistory.push({ role: 'assistant', content: errMsg });
                     try { localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(chatbotHistory)); } catch (_) {}
