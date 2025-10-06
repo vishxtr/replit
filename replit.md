@@ -51,7 +51,14 @@ PhishGuard AI/
 
 ## Running the Application
 
-### On Any Machine (Local Setup)
+### Quick Start (Recommended)
+Use the automated setup script:
+```bash
+python run.py
+```
+This will automatically check dependencies, install packages, and start the server.
+
+### Manual Setup
 1. **Clone or download the project**
 2. **Navigate to frontend folder**:
    ```bash
@@ -73,6 +80,14 @@ PhishGuard AI/
 
 ### On Replit
 The application runs automatically when you press the "Run" button. The Vite dev server is configured to work seamlessly in Replit's environment.
+
+### Documentation
+See **README.md** for comprehensive documentation including:
+- Detailed feature descriptions
+- Architecture overview
+- Component documentation
+- Deployment guides
+- Troubleshooting tips
 
 ### Build for Production
 To create a production build:
