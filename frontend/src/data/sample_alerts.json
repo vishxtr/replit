@@ -1,0 +1,35 @@
+[
+  {
+    "id": "alert001",
+    "timestamp": "2025-10-06T05:32:15Z",
+    "domain": "paypal-secure-login.com",
+    "sender": "security@paypal-secure-login.com",
+    "threatLevel": "High",
+    "detectionType": "URL Analysis",
+    "confidence": "96.8",
+    "status": "Active",
+    "description": "Suspicious high threat detected from paypal-secure-login.com"
+  },
+  {
+    "id": "alert002",
+    "timestamp": "2025-10-06T05:28:42Z",
+    "domain": "microsoft-verify.net",
+    "sender": "noreply@microsoft-verify.net",
+    "threatLevel": "Medium",
+    "detectionType": "Email Content",
+    "confidence": "89.2",
+    "status": "Active",
+    "description": "Suspicious medium threat detected from microsoft-verify.net"
+  },
+  {
+    "id": "alert003",
+    "timestamp": "2025-10-06T05:25:11Z",
+    "domain": "amazon1-account.com",
+    "sender": "support@amazon1-account.com",
+    "threatLevel": "High",
+    "detectionType": "Domain Reputation",
+    "confidence": "94.5",
+    "status": "Active",
+    "description": "Suspicious high threat detected from amazon1-account.com"
+  }
+]

@@ -1,0 +1,187 @@
+Goal:
+Transform the existing "Real-Time AI/ML-Based Phishing Detection and Prevention System" project into a **frontend-only simulation** that looks and behaves like a production-grade AI-powered phishing detection system.
+
+Do NOT build or depend on any real backend services or ML models.  
+Everything must run client-side in React, simulating intelligence, detections, and analytics using mock data, timers, and pre-seeded datasets.
+
+The final app should:
+- Look professional and enterprise-ready
+- Simulate real-time detections, AI insights, and graph visualizations
+- Contain working, interactive UI components
+- Have smooth animations and transitions
+- Appear like it’s powered by advanced AI (fake reasoning explanations)
+- Be hackathon-presentable: fast, no backend crashes, runs directly on Replit web view
+- Include all “expected” features from a SOC dashboard or AI phishing tool
+- Use **dark mode**, clean modern UI (use TailwindCSS + shadcn/ui components)
+
+---
+
+### 🎯 Core Simulation Features to Implement
+
+**1. Dashboard View (Main UI)**
+- Show summary stats:  
+  - "Active Phishing Alerts", "Links Scanned", "Detection Accuracy", "Zero-Day Detections"
+- Simulate stats updating live every few seconds using random values.
+- Include glowing alert indicators or animated status lights.
+
+**2. Live Alerts Feed (Auto-updating list)**
+- List phishing alerts with columns:
+  - Timestamp
+  - Sender / Domain
+  - Threat Level (Low/Medium/High)
+  - Detection Type (URL, Email, Message)
+  - AI Confidence %
+- Randomly generate and push new fake alerts every 3–5 seconds.
+- Use realistic-looking domains (e.g. `paypa1-login.com`, `microsoft-secure.net`).
+- Add color-coded severity badges.
+
+**3. Email/SMS Analyzer (Fake AI Analysis UI)**
+- Allow user to input or paste text (email body or SMS).
+- On submit, show:
+  - “AI Analysis in progress…” animation (fake loading spinner)
+  - Then display a detailed mock AI report:
+    - Confidence level (e.g. 96%)
+    - Reasons for detection (e.g. “Suspicious domain usage”, “Urgent tone”, “Impersonation of known brand”)
+    - Suggested user action (“Do not click any embedded links”)
+- All responses are simulated (static + randomization), no actual ML.
+
+**4. Domain Graph Visualization (Simulated Graph)**
+- Use a library like `recharts` or `react-force-graph` to display nodes (domains, subdomains, connections).
+- Randomly generate relationships between domains to make it look like threat network mapping.
+- Auto-refresh the graph periodically to simulate dynamic updates.
+
+**5. Threat Intelligence & Trend Charts**
+- Show a “Phishing Activity Trend” line chart.
+- Show “Threat Source Distribution” pie chart (Email, SMS, Web, AI-generated).
+- Charts should use random but realistic data.
+- Update slightly over time to look alive.
+
+**6. Explainable AI Panel**
+- On clicking any alert → open a right-side drawer/modal.
+- Display an "AI Explanation" card:
+  - Show generated-style text like:
+    > “The system detected anomalies in email syntax and embedded URLs similar to known phishing patterns in the OTX feed.  
+    > Confidence: 97.2% | Type: Credential Harvesting”
+- Add a few predefined explanation templates that rotate randomly.
+
+**7. UI Theme & Aesthetics**
+- Dark mode (black/gray background, neon green/blue accents)
+- Use gradients, shadows, glowing borders for techy feel.
+- Add a subtle background animation (optional grid pulse).
+
+**8. “System Status” Panel**
+- Fake system health stats (CPU Load, Threat Model Uptime, API Latency)
+- Animate small changes every few seconds.
+
+---
+
+### 🧩 Technical Implementation Instructions
+
+1. **Environment Setup**
+   - Keep everything in the `frontend/` folder.
+   - Do NOT depend on any backend or server calls.
+   - Remove/ignore old axios fetch calls.
+   - Replace with simulated data sources (JSON files or random generators).
+
+2. **Packages to Install**
+   ```bash
+   npm install recharts framer-motion lucide-react @radix-ui/react-dialog tailwindcss @headlessui/react clsx
+(If Tailwind not configured, Replit AI should auto-configure it using npx tailwindcss init -p.)
+
+File Structure
+
+css
+Copy code
+frontend/
+├─ src/
+│  ├─ components/
+│  │  ├─ Dashboard.jsx
+│  │  ├─ AlertsTable.jsx
+│  │  ├─ Analyzer.jsx
+│  │  ├─ ThreatGraph.jsx
+│  │  ├─ TrendCharts.jsx
+│  │  └─ ExplainPanel.jsx
+│  ├─ data/
+│  │  └─ sample_alerts.json
+│  ├─ App.jsx
+│  └─ main.jsx
+├─ package.json
+└─ tailwind.config.js
+Core Logic
+
+Use React state + setInterval() to simulate streaming data.
+
+Maintain fake arrays for alerts, domains, stats.
+
+Add random generator utility:
+
+js
+Copy code
+const fakeDomain = () => ["paypal", "microsoft", "google", "amazon", "netflix"][Math.floor(Math.random()*5)] + "-" + ["secure", "login", "auth"][Math.floor(Math.random()*3)] + ".com";
+const fakeLevel = () => ["Low", "Medium", "High"][Math.floor(Math.random()*3)];
+Use this to seed new alerts periodically.
+
+Main Dashboard Layout
+
+Top bar: project title + glowing “Active” indicator.
+
+Grid layout:
+
+Left: live alerts table.
+
+Right: charts + system status.
+
+Bottom: "AI Analyzer" text box.
+
+Animations
+
+Use Framer Motion for transitions.
+
+Animate cards appearing, graph pulses, and stat number increments.
+
+Start Command
+In Replit .replit file:
+
+ini
+Copy code
+run = "cd frontend && npm run dev -- --host 0.0.0.0"
+README Section (add/update)
+
+markdown
+Copy code
+## ⚡ Hackathon Demo Version
+This version runs entirely on the frontend (React + Tailwind + Recharts).
+- No backend required.
+- All data, alerts, graphs, and AI outputs are simulated.
+- Looks fully functional, lightweight, and safe for live demos.
+## Features
+✅ Real-time phishing alert simulation  
+✅ Fake AI analysis & explanations  
+✅ Domain graph visualization  
+✅ Live charts & dashboards  
+✅ Dark mode, responsive design  
+## Run on Replit
+1. Import this repo to Replit.
+2. Run — the dashboard loads automatically in the web view.
+3. Watch real-time phishing detection simulation live!
+Polish Tips for Hackathon
+
+Add a fake "AI model loading" splash screen on startup.
+
+Add a glowing “Powered by DeepGuard AI Engine” footer.
+
+Add subtle hover tooltips explaining fake stats.
+
+Keep everything interactive to look real.
+
+Add a fake console log like:
+
+csharp
+Copy code
+[PhishGuard AI] Model v3.2 loaded | Live threat monitoring initialized | Confidence threshold: 0.97
+Optional Extra: Voice or Assistant
+
+Add a button “Ask AI” → opens modal with simulated chat explaining the alert.
+
+Use random pre-written responses to appear intelligent.
+
