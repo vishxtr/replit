@@ -51,17 +51,36 @@ PhishGuard AI/
 
 ## Running the Application
 
-### Development
-The application runs automatically via the configured workflow:
+### On Any Machine (Local Setup)
+1. **Clone or download the project**
+2. **Navigate to frontend folder**:
+   ```bash
+   cd frontend
+   ```
+3. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+4. **Start the development server**:
+   ```bash
+   npm run dev
+   ```
+   Or simply:
+   ```bash
+   npm start
+   ```
+5. **Open in browser**: http://localhost:5000
+
+### On Replit
+The application runs automatically when you press the "Run" button. The Vite dev server is configured to work seamlessly in Replit's environment.
+
+### Build for Production
+To create a production build:
 ```bash
-cd frontend && npm run dev
+cd frontend
+npm run build
 ```
-
-The Vite dev server starts on port 5000 and is accessible through Replit's web view.
-
-### Accessing the Application
-- **Main App**: Opens automatically in Replit web view
-- **Local**: http://localhost:5000/
+The optimized files will be in `frontend/dist/` and can be deployed to any static hosting service (Vercel, Netlify, GitHub Pages, etc.)
 
 ## Core Features
 
